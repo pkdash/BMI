@@ -1,0 +1,32 @@
+[library.CFE]
+language = "c"
+library = "cfebmi"
+header = "bmi_cfe.h"
+entry_point = "register_bmi_cfe"
+
+[build]
+include_dirs = [
+    "/workspace/cfe/include",
+    "/workspace/cfe/bmi",
+    "/workspace/cfe/src",
+    "/workspace/cfe/extern/SoilMoistureProfiles/include"
+]
+
+library_dirs = [
+    "/workspace/cfe/build"
+]
+
+[package]
+name = "pymt_cfe"
+requirements = []
+
+[info]
+github_username = "pkdash"
+package_author = "Pabitra Dash"
+package_author_email = "pkdash_reena@hotmail.com"
+package_license = "MIT License"
+summary = "Python BMI wrapper for CFE"
+
+[ci]
+os = ["linux"]
+python_version = ["3.11"]

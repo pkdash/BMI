@@ -1,0 +1,42 @@
+{% set data = load_setup_py_data() %}
+
+package:
+  name: "pymt_cfe"
+  version: {{ data.get('version') }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - pip
+    - cython
+    - numpy 1.11.*
+    - model_metadata
+  run:
+    - python
+    - {{ pin_compatible('numpy') }}
+
+test:
+  requires:
+    - bmi-tester
+    - model_metadata
+  imports:
+    - pymt_cfe
+  commands:
+    - config_file=$(mmd-stage CFE . > MANIFEST && mmd-query CFE --var=run.config_file.path)
+    - bmi-test pymt_cfe.bmi:CFE --config-file=$config_file --manifest=MANIFEST -v
+
+about:
+  summary: Python package that wraps the pymt_cfe BMI.
+  home: https://github.com/pkdash/pymt_cfe
+  license: MIT License
+  license_file: LICENSE
+  dev_url: https://github.com/pkdash/pymt_cfe
