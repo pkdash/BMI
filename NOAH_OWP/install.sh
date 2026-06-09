@@ -53,6 +53,8 @@ else
   SEARCH_ROOTS=(
     "/workspace/noah-owp-modular"
     "/workspace/noah-owp-modular/cmake_build"
+    "/dmod/shared_libs"
+    "/dmod"
     "/opt"
     "/usr/local"
     "/usr"
