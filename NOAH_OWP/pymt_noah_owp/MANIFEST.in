@@ -1,0 +1,17 @@
+recursive-include pymt_noah_owp/data *
+include LICENSE
+include requirements.txt
+include *.rst
+include *.txt
+include Makefile
+include babel.toml
+recursive-include pymt_noah_owp *.pyx
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
+recursive-exclude meta *
+recursive-exclude recipe *
+recursive-exclude pymt_noah_owp *.cpp
+recursive-exclude pymt_noah_owp *.c
+recursive-include pymt_noah_owp *.f90
+recursive-include pymt_noah_owp *.h

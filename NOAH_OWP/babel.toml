@@ -1,0 +1,37 @@
+# Template Babelizer config for NOAA-OWP Noah Modular BMI wrapper
+# Configured for a Fortran BMI implementation (C binding entry point).
+# NOTE: Confirm library output name/path in container build.
+
+[library.NOAH_OWP]
+language = "fortran"
+library = "surfacebmi"
+header = ""
+entry_point = "register_bmi"
+
+[build]
+undef_macros = []
+define_macros = []
+libraries = []
+library_dirs = [
+    "/workspace/noah-owp-modular/build"
+]
+include_dirs = [
+    "/workspace/noah-owp-modular/include",
+    "/workspace/noah-owp-modular/src"
+]
+extra_compile_args = []
+
+[package]
+name = "pymt_noah_owp"
+requirements = []
+
+[info]
+github_username = "pkdash"
+package_author = "Pabitra Dash"
+package_author_email = "pkdash_reena@hotmail.com"
+package_license = "MIT License"
+summary = "Python BMI wrapper for NOAA-OWP Noah Modular"
+
+[ci]
+python_version = ["3.11"]
+os = ["linux"]
