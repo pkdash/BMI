@@ -25,27 +25,31 @@ TARBALL="${TARBALLS[0]}"
 
 have_cmd() { command -v "$1" >/dev/null 2>&1; }
 
-# ─── Locate libsurfacebmi.so ──────────────────────────────────────────────────
-
-first_existing_libdir() {
-  local d
-  while IFS= read -r d; do
-    [[ -n "$d" ]] || continue
-    if compgen -G "$d/libsurfacebmi.so*" > /dev/null; then
-      echo "$d"
+# ─── Helper: search for a file across the full filesystem ────────────────────
+# Skips virtual/system directories that will never contain model installs.
+find_on_fs() {
+  local filename="$1"
+  for root in /*; do
+    [[ -d "$root" ]] || continue
+    case "$root" in /proc|/sys|/dev|/run|/tmp) continue ;; esac
+    local hit
+    hit="$(find "$root" -type f -name "$filename" 2>/dev/null | head -n1 || true)"
+    if [[ -n "$hit" ]]; then
+      echo "$hit"
       return 0
     fi
   done
   return 1
 }
 
+# ─── Locate libsurfacebmi.so ──────────────────────────────────────────────────
+
 NOAH_LIB_DIR="${NOAH_LIB_DIR:-}"
 
-# 1) If NOAH_LIB_DIR already set and valid, use it.
 if [[ -n "$NOAH_LIB_DIR" ]] && compgen -G "$NOAH_LIB_DIR/libsurfacebmi.so*" > /dev/null 2>&1; then
-  : # already good
+  : # already good — user set it explicitly
 else
-  # 2) Search common install roots for libsurfacebmi.
+  # Search known roots first (fast), then fall back to full filesystem scan.
   SEARCH_ROOTS=(
     "/workspace/noah-owp-modular"
     "/workspace/noah-owp-modular/cmake_build"
@@ -56,28 +60,35 @@ else
   )
   for root in "${SEARCH_ROOTS[@]}"; do
     [[ -d "$root" ]] || continue
-    hit="$(find "$root" -type f \( -name 'libsurfacebmi.so' -o -name 'libsurfacebmi.so.*' \) 2>/dev/null | head -n1 || true)"
+    hit="$(find "$root" -type f \
+      \( -name 'libsurfacebmi.so' -o -name 'libsurfacebmi.so.*' \) \
+      2>/dev/null | head -n1 || true)"
     if [[ -n "$hit" ]]; then
       NOAH_LIB_DIR="$(dirname "$hit")"
       break
     fi
   done
+
+  # Full filesystem scan as last resort.
+  if [[ -z "$NOAH_LIB_DIR" ]]; then
+    hit="$(find_on_fs 'libsurfacebmi.so' || true)"
+    [[ -n "$hit" ]] && NOAH_LIB_DIR="$(dirname "$hit")"
+  fi
 fi
 
 if [[ -z "$NOAH_LIB_DIR" ]]; then
   echo "ERROR: Could not locate libsurfacebmi.so* on this system." >&2
   echo "Set NOAH_LIB_DIR to the directory containing libsurfacebmi.so and re-run:" >&2
-  echo "  export NOAH_LIB_DIR=/path/to/noah-owp-modular/build-or-cmake_build" >&2
+  echo "  export NOAH_LIB_DIR=/path/to/noah-owp-modular/cmake_build" >&2
   echo "  ./install.sh" >&2
   exit 1
 fi
 
-# ─── Locate Noah-OWP source root (for BMI .mod files at build time) ───────────
+# ─── Locate Noah-OWP source root ─────────────────────────────────────────────
 
 NOAH_ROOT="${NOAH_ROOT:-}"
 
 if [[ -z "$NOAH_ROOT" ]]; then
-  # Walk up from NOAH_LIB_DIR looking for bmi/bmi.f90 as a marker.
   for candidate in \
     "$(cd "$NOAH_LIB_DIR" && pwd 2>/dev/null || true)" \
     "$(cd "$NOAH_LIB_DIR/.." && pwd 2>/dev/null || true)" \
@@ -91,11 +102,8 @@ if [[ -z "$NOAH_ROOT" ]]; then
 fi
 
 if [[ -z "$NOAH_ROOT" ]]; then
-  # Broader search
-  hit="$(find /workspace /opt /usr/local "$HOME" -type f -name 'bmi_noahowp.f90' 2>/dev/null | head -n1 || true)"
-  if [[ -n "$hit" ]]; then
-    NOAH_ROOT="$(cd "$(dirname "$hit")/.." && pwd 2>/dev/null || true)"
-  fi
+  hit="$(find_on_fs 'bmi_noahowp.f90' || true)"
+  [[ -n "$hit" ]] && NOAH_ROOT="$(cd "$(dirname "$hit")/.." && pwd 2>/dev/null || true)"
 fi
 
 if [[ -z "$NOAH_ROOT" ]]; then
@@ -104,19 +112,11 @@ if [[ -z "$NOAH_ROOT" ]]; then
   echo "  export NOAH_ROOT=/path/to/noah-owp-modular" >&2
 fi
 
-# ─── Locate NetCDF Fortran library (needed at link time) ─────────────────────
-
-NETCDF_LIB_DIR="${NETCDF:-/opt/conda}/lib"
-if [[ ! -d "$NETCDF_LIB_DIR" ]]; then
-  NETCDF_LIB_DIR="${CONDA_PREFIX}/lib"
-fi
-
-# ─── Locate .mod files (bmif_2_0.mod, bminoahowp.mod) ───────────────────────
-# These are generated when Noah is compiled and live in the bmi/ subdirectory.
+# ─── Locate .mod files (bmif_2_0.mod, bminoahowp.mod) ────────────────────────
 
 NOAH_BMI_DIR="${NOAH_BMI_DIR:-}"
+
 if [[ -z "$NOAH_BMI_DIR" ]]; then
-  # Check cmake_build/mod/ layout first (cmake builds), then bmi/ (make builds)
   for candidate in \
     "${NOAH_LIB_DIR}/mod" \
     "${NOAH_ROOT}/cmake_build/mod" \
@@ -131,10 +131,8 @@ if [[ -z "$NOAH_BMI_DIR" ]]; then
 fi
 
 if [[ -z "$NOAH_BMI_DIR" ]]; then
-  hit="$(find /workspace /opt /usr/local "$HOME" -type f -name 'bmif_2_0.mod' 2>/dev/null | head -n1 || true)"
-  if [[ -n "$hit" ]]; then
-    NOAH_BMI_DIR="$(dirname "$hit")"
-  fi
+  hit="$(find_on_fs 'bmif_2_0.mod' || true)"
+  [[ -n "$hit" ]] && NOAH_BMI_DIR="$(dirname "$hit")"
 fi
 
 if [[ -z "$NOAH_BMI_DIR" ]]; then
@@ -146,34 +144,38 @@ if [[ -z "$NOAH_BMI_DIR" ]]; then
   exit 1
 fi
 
+# ─── Locate NetCDF Fortran library ───────────────────────────────────────────
+
+NETCDF_LIB_DIR="${NETCDF:-/opt/conda}/lib"
+if [[ ! -d "$NETCDF_LIB_DIR" ]]; then
+  NETCDF_LIB_DIR="${CONDA_PREFIX}/lib"
+fi
+
 export NOAH_ROOT
 export NOAH_LIB_DIR
 export NOAH_BMI_DIR
 export LD_LIBRARY_PATH="${NOAH_LIB_DIR}:${NETCDF_LIB_DIR}:${LD_LIBRARY_PATH:-}"
 
-# ─── Ensure working C/Fortran compilers are available ───────────────────────
-# Conda compiler wrappers can be broken in some envs (missing libgcc).
-# Prefer system compilers if conda ones are broken.
+# ─── Ensure working C compiler ───────────────────────────────────────────────
+
 _check_compiler() {
-  local cc="$1"
-  command -v "$cc" >/dev/null 2>&1 || return 1
-  echo 'int main(){}' | "$cc" -x c - -o /dev/null 2>/dev/null || return 1
-  return 0
+  command -v "$1" >/dev/null 2>&1 || return 1
+  echo 'int main(){}' | "$1" -x c - -o /dev/null 2>/dev/null || return 1
 }
 
 if ! _check_compiler "${CC:-gcc}"; then
-  echo "  Active env compiler broken or missing — trying system compilers..."
   if _check_compiler /usr/bin/gcc; then
     export CC=/usr/bin/gcc
     echo "  Using system CC: $CC"
   else
-    echo "WARNING: No working C compiler found. Install gcc in your env:" >&2
+    echo "WARNING: No working C compiler found. Install gcc:" >&2
     echo "  conda install -c conda-forge gcc" >&2
   fi
 fi
 
+# ─── Ensure Fortran compiler ─────────────────────────────────────────────────
+
 _find_gfortran() {
-  # Search in order: current FC, common system paths, conda env, broader PATH
   local candidates=(
     "${FC:-}"
     gfortran
@@ -183,18 +185,14 @@ _find_gfortran() {
   )
   for c in "${candidates[@]}"; do
     [[ -n "$c" ]] || continue
-    if command -v "$c" >/dev/null 2>&1; then
-      echo "$c"
-      return 0
-    fi
+    command -v "$c" >/dev/null 2>&1 && echo "$c" && return 0
   done
-  # Last resort: search filesystem
   local hit
   hit="$(find /usr /opt "${CONDA_PREFIX}" -name 'gfortran' -type f 2>/dev/null | head -n1 || true)"
-  if [[ -n "$hit" ]]; then
-    echo "$hit"
-    return 0
-  fi
+  [[ -n "$hit" ]] && echo "$hit" && return 0
+  # Full filesystem scan as last resort.
+  hit="$(find_on_fs 'gfortran' || true)"
+  [[ -n "$hit" ]] && echo "$hit" && return 0
   return 1
 }
 
@@ -218,16 +216,18 @@ else
   [[ -n "$FC_PATH" ]] && export FC="$FC_PATH"
 fi
 
+# ─── Print detected paths ────────────────────────────────────────────────────
+
 echo "Using active conda env : ${CONDA_PREFIX}"
 echo "Using tarball          : ${TARBALL}"
 echo "Detected NOAH_LIB_DIR  : ${NOAH_LIB_DIR}"
 echo "Detected NOAH_ROOT     : ${NOAH_ROOT:-<not found>}"
 echo "Detected NOAH_BMI_DIR  : ${NOAH_BMI_DIR}"
 echo "NetCDF lib dir         : ${NETCDF_LIB_DIR}"
+echo "Fortran compiler       : ${FC:-<not set>}"
 
 # ─── Ensure build dependencies are present ───────────────────────────────────
-# --no-build-isolation means the build uses the current env directly,
-# so numpy and cython must be installed before pip install runs.
+
 echo "Checking build dependencies (numpy, cython)..."
 python -c "import numpy" 2>/dev/null || {
   echo "  numpy not found — installing..."
@@ -240,8 +240,6 @@ python -c "import Cython" 2>/dev/null || {
 
 # ─── Install ─────────────────────────────────────────────────────────────────
 
-# --no-build-isolation ensures the build subprocess inherits exported env vars
-# (NOAH_ROOT, NOAH_LIB_DIR, NOAH_BMI_DIR) needed to find .mod and .so files.
 if have_cmd uv; then
   uv pip install --no-build-isolation "$TARBALL"
 else
