@@ -1,31 +1,62 @@
-# BMI Model Wrappers
+# BMI Model Wrappers Monorepo
 
-This repository hosts Python BMI wrapper projects for BIM compatible hydrological models written in C, C++, or Fortran.
+This repository contains Python BMI wrapper projects for hydrological models (C/C++/Fortran).
 
 ## Purpose
 
-The goal of this project is to:
+This monorepo is used to:
 
-- Develop and maintain Python-accessible BMI interfaces for multiple models
-- Keep each model wrapper isolated in its own folder (build config, package, scripts)
-- Standardize build, test, and packaging workflows across models
-- Support reproducible local and container-based development
+- Build and maintain Python-accessible BMI wrappers for multiple models
+- Keep each model implementation isolated while following shared conventions
+- Standardize regeneration, build, test, and packaging workflows
+- Make onboarding easier for future model wrappers (for example, NOAH-OWP)
 
-## Current Status
+## Repository Layout
 
-- `CFE/` contains the existing CFE BMI wrapper workflow and packaging setup.
-- Additional model wrappers (for example, NOAH-OWP) will be added as separate sibling folders.
+```text
+BMI/
+├── README.md                  # Monorepo overview (this file)
+├── .gitignore
+├── CFE/                       # CFE BMI wrapper (C)
+│   ├── README.md
+│   ├── babel.toml
+│   └── pymt_cfe/
+└── NOAH_OWP/                  # Noah-OWP BMI wrapper (Fortran)
+    ├── README.md
+    ├── babel.toml
+    ├── Dockerfile
+    ├── regen_and_build.sh
+    ├── post_babelize_patch.sh
+    └── pymt_noah_owp/
+```
 
-## Planned Structure
+## Current Model Status
 
-Each model wrapper will follow a similar pattern:
+| Model | Language | Package | Status |
+|---|---|---|---|
+| [CFE](https://github.com/NOAA-OWP/cfe) | C | `pymt_cfe` | ✅ Working |
+| [Noah-OWP Modular](https://github.com/NOAA-OWP/noah-owp-modular) | Fortran | `pymt_noah_owp` | ✅ Working |
 
-- model-specific `babel.toml`
-- Python package source (`pymt_<model>`)
-- build/regeneration scripts
-- model-specific documentation
+## Model Project Conventions
 
-## Notes
+Each model folder should include:
 
-- This is a monorepo rooted at `BMI/`.
-- Shared conventions (naming, scripts, CI, and docs) will be aligned as additional models are added.
+- A model-specific `README.md`
+- A model-specific `babel.toml`
+- A generated/maintained Python package (`pymt_<model>`)
+- Helper scripts for regenerate/build/test (as needed)
+
+## Contribution / Workflow
+
+1. Create a model folder at repo root (example: `NOAH_OWP/`).
+2. Add model-specific `babel.toml` and package naming (`pymt_<model>`).
+3. Regenerate wrapper code with Babelizer.
+4. Apply local patches (if required for packaging/runtime).
+5. Build and test in a clean environment (or Docker).
+6. Commit only source/config/docs (not build artifacts).
+
+## Git Hygiene
+
+- Track source code, configuration, and docs.
+- Do **not** track generated artifacts (`build/`, `dist/`, `*.egg-info`, `__pycache__`, compiled binaries).
+- Keep one git repository at `BMI/` root (no nested `.git` repositories).
