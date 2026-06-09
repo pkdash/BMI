@@ -172,14 +172,50 @@ if ! _check_compiler "${CC:-gcc}"; then
   fi
 fi
 
-if ! command -v "${FC:-gfortran}" >/dev/null 2>&1; then
-  if command -v /usr/bin/gfortran >/dev/null 2>&1; then
-    export FC=/usr/bin/gfortran
-    echo "  Using system FC: $FC"
-  else
-    echo "WARNING: No gfortran found. Install it:" >&2
-    echo "  conda install -c conda-forge gfortran" >&2
+_find_gfortran() {
+  # Search in order: current FC, common system paths, conda env, broader PATH
+  local candidates=(
+    "${FC:-}"
+    gfortran
+    /usr/bin/gfortran
+    /usr/local/bin/gfortran
+    "${CONDA_PREFIX}/bin/gfortran"
+  )
+  for c in "${candidates[@]}"; do
+    [[ -n "$c" ]] || continue
+    if command -v "$c" >/dev/null 2>&1; then
+      echo "$c"
+      return 0
+    fi
+  done
+  # Last resort: search filesystem
+  local hit
+  hit="$(find /usr /opt "${CONDA_PREFIX}" -name 'gfortran' -type f 2>/dev/null | head -n1 || true)"
+  if [[ -n "$hit" ]]; then
+    echo "$hit"
+    return 0
   fi
+  return 1
+}
+
+FC_PATH="$(_find_gfortran || true)"
+if [[ -n "$FC_PATH" ]]; then
+  export FC="$FC_PATH"
+  echo "  Using Fortran compiler: $FC"
+else
+  echo "  gfortran not found — installing via conda..."
+  if have_cmd conda; then
+    conda install -y -c conda-forge gfortran
+  elif have_cmd micromamba; then
+    micromamba install -y -c conda-forge gfortran
+  else
+    echo "ERROR: No Fortran compiler found and cannot install automatically." >&2
+    echo "Install gfortran manually and re-run:" >&2
+    echo "  conda install -c conda-forge gfortran" >&2
+    exit 1
+  fi
+  FC_PATH="$(_find_gfortran || true)"
+  [[ -n "$FC_PATH" ]] && export FC="$FC_PATH"
 fi
 
 echo "Using active conda env : ${CONDA_PREFIX}"
