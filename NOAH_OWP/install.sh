@@ -165,14 +165,12 @@ _check_compiler() {
   echo 'int main(){}' | "$1" -x c - -o /dev/null 2>/dev/null || return 1
 }
 
-if ! _check_compiler "${CC:-gcc}"; then
-  if _check_compiler /usr/bin/gcc; then
-    export CC=/usr/bin/gcc
-    echo "  Using system CC: $CC"
-  else
-    echo "WARNING: No working C compiler found. Install gcc:" >&2
-    echo "  conda install -c conda-forge gcc" >&2
-  fi
+if [[ -x /usr/bin/gcc ]]; then
+  export CC=/usr/bin/gcc
+  echo "  Using system CC: $CC"
+elif ! _check_compiler "${CC:-gcc}"; then
+  echo "WARNING: No working C compiler found. Install gcc:" >&2
+  echo "  conda install -c conda-forge gcc" >&2
 fi
 
 # ─── Ensure Fortran compiler ─────────────────────────────────────────────────

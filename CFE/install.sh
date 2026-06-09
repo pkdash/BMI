@@ -167,25 +167,21 @@ export CFE_LIB_DIR
 export LD_LIBRARY_PATH="${CFE_LIB_DIR}:${LD_LIBRARY_PATH:-}"
 
 # ─── Ensure working C compiler ───────────────────────────────────────────────
+# Always prefer system gcc over conda's gcc wrapper to avoid
+# compiler_compat/ld linker issues (missing libgcc) in conda envs.
 
 _check_compiler() {
   command -v "$1" >/dev/null 2>&1 || return 1
   echo 'int main(){}' | "$1" -x c - -o /dev/null 2>/dev/null || return 1
 }
 
-if ! _check_compiler "${CC:-gcc}"; then
-  if _check_compiler /usr/bin/gcc; then
-    export CC=/usr/bin/gcc
-    export CXX=/usr/bin/g++
-    echo "  Using system CC: $CC"
-  else
-    echo "WARNING: No working C compiler found. Install gcc:" >&2
-    echo "  conda install -c conda-forge gcc" >&2
-  fi
-else
-  # Prefer system compiler to avoid conda toolchain libgcc issues.
-  if [[ -x /usr/bin/gcc ]]; then export CC=/usr/bin/gcc; fi
-  if [[ -x /usr/bin/g++ ]]; then export CXX=/usr/bin/g++; fi
+if [[ -x /usr/bin/gcc ]]; then
+  export CC=/usr/bin/gcc
+  export CXX=/usr/bin/g++
+  echo "  Using system CC: $CC"
+elif ! _check_compiler "${CC:-gcc}"; then
+  echo "WARNING: No working C compiler found. Install gcc:" >&2
+  echo "  conda install -c conda-forge gcc" >&2
 fi
 
 # ─── Print detected paths ────────────────────────────────────────────────────
