@@ -190,7 +190,8 @@ This repo includes `install.sh` (same directory as tarball) that:
 - Detects active conda env
 - Finds CFE paths programmatically
 - Sets required env vars for installation
-- Installs tarball with `uv pip` (or `pip` fallback)
+- Installs tarball with the active env's `python -m pip`
+- Avoids mixed JupyterHub conda compiler/linker setups
 - Writes conda activation hook to set `LD_LIBRARY_PATH`
 
 Use this script to avoid manual path exports where possible.
