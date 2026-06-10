@@ -167,6 +167,9 @@ _check_compiler() {
 
 if [[ -x /usr/bin/gcc ]]; then
   export CC=/usr/bin/gcc
+  export LDSHARED="/usr/bin/gcc -shared"
+  unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
+  unset LDFLAGS CFLAGS CXXFLAGS LD AR NM RANLIB DEBUG_CFLAGS DEBUG_CXXFLAGS 2>/dev/null || true
   echo "  Using system CC: $CC"
 elif ! _check_compiler "${CC:-gcc}"; then
   echo "WARNING: No working C compiler found. Install gcc:" >&2
