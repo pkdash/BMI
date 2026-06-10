@@ -8,6 +8,11 @@ from pathlib import Path
 import numpy as np
 from setuptools import Extension, find_packages, setup
 
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    cythonize = None
+
 
 def _unique_existing(paths):
     seen = set()
@@ -107,6 +112,21 @@ common_flags = {
 
 libraries = []
 
+
+def _extension_source():
+    pyx_source = Path("pymt_cfe/lib/cfe.pyx")
+    c_source = Path("pymt_cfe/lib/cfe.c")
+
+    if cythonize is not None and pyx_source.exists():
+        return str(pyx_source)
+    if c_source.exists():
+        return str(c_source)
+
+    raise RuntimeError(
+        "Cannot build pymt_cfe: missing pymt_cfe/lib/cfe.c and Cython is "
+        "not available to generate it from pymt_cfe/lib/cfe.pyx."
+    )
+
 # Locate directories under Windows %LIBRARY_PREFIX%.
 if sys.platform.startswith("win"):
     common_flags["include_dirs"].append(os.path.join(sys.prefix, "Library", "include"))
@@ -115,11 +135,14 @@ if sys.platform.startswith("win"):
 ext_modules = [
     Extension(
         "pymt_cfe.lib.cfe",
-        ["pymt_cfe/lib/cfe.pyx"],
+        [_extension_source()],
         libraries=libraries + ["cfebmi"],
         **common_flags,
     ),
 ]
+
+if cythonize is not None and ext_modules[0].sources[0].endswith(".pyx"):
+    ext_modules = cythonize(ext_modules, language_level=3)
 
 entry_points = {
     "pymt.plugins": [

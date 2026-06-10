@@ -43,6 +43,11 @@ from pathlib import Path
 import numpy as np
 from setuptools import Extension, find_packages, setup
 
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    cythonize = None
+
 
 def _unique_existing(paths):
     seen = set()
@@ -142,6 +147,21 @@ common_flags = {
 
 libraries = []
 
+
+def _extension_source():
+    pyx_source = Path("pymt_cfe/lib/cfe.pyx")
+    c_source = Path("pymt_cfe/lib/cfe.c")
+
+    if cythonize is not None and pyx_source.exists():
+        return str(pyx_source)
+    if c_source.exists():
+        return str(c_source)
+
+    raise RuntimeError(
+        "Cannot build pymt_cfe: missing pymt_cfe/lib/cfe.c and Cython is "
+        "not available to generate it from pymt_cfe/lib/cfe.pyx."
+    )
+
 # Locate directories under Windows %LIBRARY_PREFIX%.
 if sys.platform.startswith("win"):
     common_flags["include_dirs"].append(os.path.join(sys.prefix, "Library", "include"))
@@ -150,11 +170,14 @@ if sys.platform.startswith("win"):
 ext_modules = [
     Extension(
         "pymt_cfe.lib.cfe",
-        ["pymt_cfe/lib/cfe.pyx"],
+        [_extension_source()],
         libraries=libraries + ["cfebmi"],
         **common_flags,
     ),
 ]
+
+if cythonize is not None and ext_modules[0].sources[0].endswith(".pyx"):
+    ext_modules = cythonize(ext_modules, language_level=3)
 
 entry_points = {
     "pymt.plugins": [
@@ -198,9 +221,30 @@ setup(
 )
 PYEOF
 
+# 3) Keep generated C sources in source distributions. They are useful when
+# installing without build isolation or without Cython available.
+MANIFEST_IN="${PKG_DIR}/MANIFEST.in"
+if [[ -f "${MANIFEST_IN}" ]]; then
+python - "${MANIFEST_IN}" <<'PYEOF'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+text = text.replace(
+    "recursive-exclude pymt_cfe *.c",
+    "recursive-include pymt_cfe *.c",
+)
+if "recursive-include pymt_cfe *.c" not in text:
+    text = text.rstrip() + "\nrecursive-include pymt_cfe *.c\n"
+path.write_text(text)
+PYEOF
+fi
+
 echo "Done. Patched:"
 echo "  - ${PKG_DIR}/pymt_cfe/__init__.py"
 echo "  - ${PKG_DIR}/setup.py"
+echo "  - ${PKG_DIR}/MANIFEST.in"
 echo
 echo "Next steps:"
 echo "  cd ${PKG_DIR}"

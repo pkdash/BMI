@@ -11,5 +11,5 @@ recursive-include docs *.rst
 recursive-include docs Makefile
 recursive-exclude meta *
 recursive-exclude recipe *
-recursive-exclude pymt_cfe *.cpp
-recursive-exclude pymt_cfe *.c
+recursive-include pymt_cfe *.cpp
+recursive-include pymt_cfe *.c
