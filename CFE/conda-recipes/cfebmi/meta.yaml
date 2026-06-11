@@ -1,0 +1,44 @@
+{% set name = "cfebmi" %}
+{% set version = "2.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  git_url: https://github.com/NOAA-OWP/cfe.git
+  git_rev: v{{ version }}
+
+build:
+  number: 0
+  skip: true  # [not linux]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - cmake
+    - make
+    - pkg-config
+  host: []
+  run: []
+
+test:
+  commands:
+    - test -f "${PREFIX}/lib/libcfebmi.so"
+    - test -f "${PREFIX}/include/bmi/bmi.h"
+    - test -f "${PREFIX}/include/cfe/bmi_cfe.h"
+    - test -f "${PREFIX}/lib/pkgconfig/cfebmi.pc"
+    - pkg-config --exists cfebmi
+    - pkg-config --cflags cfebmi
+    - pkg-config --libs cfebmi
+
+about:
+  home: https://github.com/NOAA-OWP/cfe
+  license: MIT License
+  license_file: LICENSE
+  summary: CFE BMI shared library with headers and pkg-config metadata
+
+extra:
+  recipe-maintainers:
+    - pkdash
