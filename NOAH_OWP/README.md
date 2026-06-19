@@ -10,6 +10,7 @@ land surface model, generated using [Babelizer](https://babelizer.readthedocs.io
 ```text
 NOAH_OWP/
 ├── README.md
+├── QUICKSTART.md
 ├── Dockerfile
 ├── babel.toml
 ├── regen_and_build.sh
