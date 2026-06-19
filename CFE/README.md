@@ -10,6 +10,22 @@ This repository provides a Docker-based workflow to:
 
 ---
 
+## Repository layout
+
+```text
+CFE/
+├── README.md
+├── QUICKSTART.md
+├── Dockerfile
+├── babel.toml
+├── regen_and_build.sh
+├── post_babelize_patch.sh
+├── install.sh
+└── pymt_cfe/          # generated + patched Python wrapper package
+```
+
+---
+
 ## Prerequisites
 
 - Docker installed and running
