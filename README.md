@@ -52,7 +52,7 @@ BMI/
 |---|---|---|---|
 | [CFE](https://github.com/NOAA-OWP/cfe) | C | `pymt_cfe` | ✅ Working |
 | [Noah-OWP Modular](https://github.com/NOAA-OWP/noah-owp-modular) | Fortran | `pymt_noah_owp` | ✅ Working |
-| [Soil Freeze Thaw](https://github.com/NOAA-OWP/SoilFreezeThaw) | `pymt_sft` | ✅ Working |
+| [Soil Freeze Thaw](https://github.com/NOAA-OWP/SoilFreezeThaw) | C++ | `pymt_sft` | ✅ Working |
 
 ## Model Project Conventions
 
