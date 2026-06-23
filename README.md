@@ -19,15 +19,31 @@ BMI/
 ├── .gitignore
 ├── CFE/                       # CFE BMI wrapper (C)
 │   ├── README.md
+│   ├── QUICKSTART.md
 │   ├── babel.toml
+|   ├── Dockerfile
+│   ├── regen_and_build.sh
+│   ├── post_babelize_patch.sh
+│   ├── install.sh
 │   └── pymt_cfe/
 └── NOAH_OWP/                  # Noah-OWP BMI wrapper (Fortran)
+│   ├── README.md
+│   ├── QUICKSTART.md
+│   ├── babel.toml
+│   ├── Dockerfile
+│   ├── regen_and_build.sh
+│   ├── post_babelize_patch.sh
+│   ├── install.sh
+│   └── pymt_noah_owp/
+└── SOIL-FREEZE-THAW/           # SoilFreezeThaw BMI wrapper (C++)
     ├── README.md
+    ├── QUICKSTART.md
     ├── babel.toml
     ├── Dockerfile
     ├── regen_and_build.sh
     ├── post_babelize_patch.sh
-    └── pymt_noah_owp/
+    ├── install.sh
+    └── pymt_sft/
 ```
 
 ## Current Model Status
@@ -36,6 +52,7 @@ BMI/
 |---|---|---|---|
 | [CFE](https://github.com/NOAA-OWP/cfe) | C | `pymt_cfe` | ✅ Working |
 | [Noah-OWP Modular](https://github.com/NOAA-OWP/noah-owp-modular) | Fortran | `pymt_noah_owp` | ✅ Working |
+| [Soil Freeze Thaw](https://github.com/NOAA-OWP/SoilFreezeThaw) | `pymt_sft` | ✅ Working |
 
 ## Model Project Conventions
 
