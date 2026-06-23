@@ -187,8 +187,14 @@ Direct install may work if CFE paths are auto-detected. If not, set CFE paths ex
 
 ```bash
 # Recommended explicit setup for direct install
-export CFE_ROOT=/path/to/cfe
+# Find the path containing the cfe bmi.h header file
+find / -name 'bmi.h' 2>/dev/null
+export CFE_ROOT=/path/to/cfe header file # directory containing cfe bmi.h
+
+# Find the path containing libcfebmi.so*
+find / -name "libcfebmi.so*" 2>/dev/null
 export CFE_LIB_DIR=/path/to/cfe/build   # directory containing libcfebmi.so*
+
 export LD_LIBRARY_PATH="$CFE_LIB_DIR:$LD_LIBRARY_PATH"
 
 uv pip install /path/to/pymt_cfe-0.1.tar.gz
@@ -261,6 +267,11 @@ python -m ipykernel install --user --name pymt-cfe --display-name "Python (pymt-
 ~/.local/share/jupyter/kernels/pymt-cfe/kernel.json
 ```
 
+```bash
+# Find the path to the `libcfebmi.so` file
+find / -name "libcfebmi.so*" 2>/dev/null
+```
+
 3. Add top-level `env` key:
 
 ```json
@@ -270,7 +281,7 @@ python -m ipykernel install --user --name pymt-cfe --display-name "Python (pymt-
   "language": "python",
   "metadata": {},
   "env": {
-    "LD_LIBRARY_PATH": "/opt/symfluence/data/installs/ngen/extern/cfe/cmake_build"
+    "LD_LIBRARY_PATH": "/path/to libcfebmi.so file"
   }
 }
 ```
@@ -283,7 +294,7 @@ If modifying kernelspec files is not convenient, preload `libcfebmi` in the firs
 
 ```python
 import ctypes
-ctypes.CDLL("/opt/symfluence/data/installs/ngen/extern/cfe/cmake_build/libcfebmi.so.1.0.0", mode=ctypes.RTLD_GLOBAL)
+ctypes.CDLL("/path/to/libcfebmi.so.1.0.0", mode=ctypes.RTLD_GLOBAL)
 ```
 
 Then import normally:
