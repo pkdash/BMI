@@ -3,6 +3,14 @@
 Python BMI wrapper for the [NOAA-OWP Noah Modular](https://github.com/NOAA-OWP/noah-owp-modular)
 land surface model, generated using [Babelizer](https://babelizer.readthedocs.io).
 
+This repository provides a Docker-based workflow to:
+
+1. Build NOAA-OWP Noah Modular
+2. Generate a Python BMI wrapper (`pymt_noah_owp`) with Babelizer
+3. Test the wrapper in-container
+4. Build distributable artifacts (`.tar.gz`, wheel) with `uv`
+5. Install from the built tarball
+
 ---
 
 ## Repository layout

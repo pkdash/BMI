@@ -1,8 +1,10 @@
-# CFE + Babelizer + `pymt_cfe` Packaging Workflow
+# CFE BMI Python Wrapper (`pymt_cfe`)
+
+Python BMI wrapper for the [NOAA-OWP CFE](https://github.com/NOAA-OWP/cfe), generated using [Babelizer](https://babelizer.readthedocs.io).
 
 This repository provides a Docker-based workflow to:
 
-1. Build NOAA-OWP CFE (`NGEN` mode)
+1. Build NOAA-OWP CFE (`NGEN` mode) BMI C model
 2. Generate a Python BMI wrapper (`pymt_cfe`) with Babelizer
 3. Test the wrapper in-container
 4. Build distributable artifacts (`.tar.gz`, wheel) with `uv`

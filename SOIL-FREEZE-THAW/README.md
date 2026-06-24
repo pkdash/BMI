@@ -1,4 +1,6 @@
-# Soil-Freeze-Thaw + Babelizer + `pymt_sft` Packaging Workflow
+# Soil-Freeze-Thaw Python BMI Wrapper (`pymt_sft`)
+
+Python BMI wrapper for the [NOAA-OWP SoilFreezeThaw](https://github.com/NOAA-OWP/SoilFreezeThaw), generated using [Babelizer](https://babelizer.readthedocs.io).
 
 This repository provides a Docker-based workflow to:
 
@@ -338,7 +340,7 @@ All standard [CSDMS BMI functions](https://bmi.readthedocs.io/en/stable/bmi.data
 
 ### Architecture
 
-```
+```text
 ┌─────────────────────┐
 │  PyMT / user Python │
 │  from pymt_sft      │
