@@ -1,5 +1,10 @@
 [build-system]
-requires = ["cython", "numpy", "setuptools", "wheel"]
+# numpy is pinned below 2 deliberately. The primary consumer of this wrapper
+# (NOAA-OWP/ngen) hard-rejects numpy>=2.0.0 at CMake configure time, so the
+# extension must be built against the same major version it will be imported
+# alongside. Leaving this unpinned also makes isolated pip builds drift as new
+# numpy majors are released.
+requires = ["cython", "numpy<2", "setuptools", "wheel"]
 
 [tool.pytest.ini_options]
 minversion = "5.0"

@@ -70,3 +70,14 @@ compile_commands.json
 # --- Local model checkouts / heavy binaries (optional, uncomment if needed) ---
 # cfe/
 # noah-owp-modular/
+
+# --- Distribution tarballs (sdists, conda packages) ---
+# The README's Git Hygiene rule: track source, not build output. install.sh
+# consumes pymt_*-*.tar.gz from the working tree; they are never committed.
+*.tar.gz
+*.tar.bz2
+*.conda
+
+# --- Local agent/tooling session state (not CI config) ---
+.github/context-mode/
+.github/hooks/context-mode.json

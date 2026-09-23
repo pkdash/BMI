@@ -107,6 +107,7 @@ common_flags = {
     "define_macros": [],
     "undef_macros": [],
     "extra_compile_args": [],
+    "extra_link_args": [],
     "language": "c",
 }
 
@@ -131,6 +132,18 @@ def _extension_source():
 if sys.platform.startswith("win"):
     common_flags["include_dirs"].append(os.path.join(sys.prefix, "Library", "include"))
     common_flags["library_dirs"].append(os.path.join(sys.prefix, "Library", "lib"))
+
+# Embed the discovered library directories in the extension as a runtime search
+# path. Without this, `import pymt_cfe` fails with
+#   ImportError: libcfebmi.so: cannot open shared object file
+# unless the caller has already exported LD_LIBRARY_PATH, which forces every
+# consumer (conda activate.d hooks, venv wrappers, CI jobs) to reproduce the
+# same environment plumbing. Windows has no RPATH equivalent -- there the DLL
+# must be found via PATH.
+if not sys.platform.startswith("win"):
+    common_flags["extra_link_args"].extend(
+        "-Wl,-rpath,{0}".format(d) for d in common_flags["library_dirs"]
+    )
 
 ext_modules = [
     Extension(
