@@ -178,7 +178,7 @@ setup(
     author_email="pkdash_reena@hotmail.com",
     description="PyMT plugin for pymt_cfe",
     long_description=long_description,
-    version="0.2",
+    version="0.2.0",
     url="https://github.com/pkdash/BMI",
     project_urls={
         "Source": "https://github.com/pkdash/BMI/tree/main/CFE/pymt_cfe",
