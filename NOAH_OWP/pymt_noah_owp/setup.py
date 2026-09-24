@@ -158,7 +158,10 @@ setup(
     description="PyMT plugin for pymt_noah_owp",
     long_description=long_description,
     version="0.1",
-    url="https://github.com/pkdash/pymt_noah_owp",
+    url="https://github.com/pkdash/BMI",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/NOAH_OWP/pymt_noah_owp",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
