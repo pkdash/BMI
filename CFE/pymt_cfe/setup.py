@@ -179,7 +179,10 @@ setup(
     description="PyMT plugin for pymt_cfe",
     long_description=long_description,
     version="0.2",
-    url="https://github.com/pkdash/pymt_cfe",
+    url="https://github.com/pkdash/BMI",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/CFE/pymt_cfe",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
