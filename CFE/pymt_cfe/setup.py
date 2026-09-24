@@ -178,7 +178,7 @@ setup(
     author_email="pkdash_reena@hotmail.com",
     description="PyMT plugin for pymt_cfe",
     long_description=long_description,
-    version="0.1",
+    version="0.2",
     url="https://github.com/pkdash/pymt_cfe",
     classifiers=[
         "Development Status :: 4 - Beta",
