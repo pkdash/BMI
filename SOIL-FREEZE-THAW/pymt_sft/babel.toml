@@ -1,0 +1,36 @@
+[library.SFT]
+language = "c++"
+library = "sftbmi"
+header = "bmi_soil_freeze_thaw.hxx"
+entry_point = "BmiSoilFreezeThaw"
+
+
+[build]
+undef_macros = []
+define_macros = []
+libraries = []
+library_dirs = [
+    "/workspace/sft/build"
+]
+include_dirs = [
+    "/workspace/sft/include",
+    "/workspace/sft/bmi",
+    "/workspace/sft/src"
+]
+extra_compile_args = []
+
+[package]
+name = "pymt_sft"
+requirements = []
+
+[info]
+github_username = "pkdash"
+package_author = "Pabitra Dash"
+package_author_email = "pkdash_reena@hotmail.com"
+package_license = "MIT License"
+summary = "Python BMI wrapper for SFT"
+
+[ci]
+python_version = ["3.11"]
+os = ["linux"]
+
