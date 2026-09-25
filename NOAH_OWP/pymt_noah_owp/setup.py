@@ -162,7 +162,7 @@ setup(
     author_email="pkdash_reena@hotmail.com",
     description="PyMT plugin for pymt_noah_owp",
     long_description=long_description,
-    version="0.1",
+    version="0.2.0",
     url="https://github.com/pkdash/BMI",
     project_urls={
         "Source": "https://github.com/pkdash/BMI/tree/main/NOAH_OWP/pymt_noah_owp",
