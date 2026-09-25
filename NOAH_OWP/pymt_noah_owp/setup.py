@@ -82,6 +82,11 @@ common_flags = {
     "define_macros": [],
     "undef_macros": [],
     "extra_compile_args": [],
+    "extra_link_args": (
+        [f"-Wl,-rpath,{d}" for d in library_dirs]
+        if not sys.platform.startswith("win")
+        else []
+    ),
     "language": "c",
 }
 
