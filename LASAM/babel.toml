@@ -1,0 +1,24 @@
+[library.LASAM]
+language = "c++"
+library = "lasambmi"
+header = "bmi_lgar.hxx"
+entry_point = "BmiLGAR"
+
+[build]
+include_dirs = ["/workspace/LGAR-C/include", "/workspace/LGAR-C/bmi", "/workspace/LGAR-C/giuh"]
+library_dirs = ["/workspace/LGAR-C/build"]
+
+[package]
+name = "pymt_lasam"
+requirements = []
+
+[info]
+github_username = "vaishaliswaminathan"
+package_author = "Vaishali Swaminathan"
+package_author_email = "vaishaliswaminathan@tamu.edu"
+package_license = "Apache Software License 2.0"
+summary = "Python BMI wrapper for LASAM/CASAM (LGAR-C)"
+
+[ci]
+os = ["linux"]
+python_version = ["3.11"]
