@@ -1,0 +1,30 @@
+[library.TOPMODEL]
+language = "c"
+library = "topmodelbmi"
+header = "bmi_topmodel.h"
+entry_point = "register_bmi_topmodel"
+
+[build]
+include_dirs = [
+    "/workspace/topmodel/include"
+]
+
+library_dirs = [
+    "/workspace/topmodel/build",
+    "/workspace/topmodel/src"
+]
+
+[package]
+name = "pymt_topmodel"
+requirements = []
+
+[info]
+github_username = "vaishswami"
+package_author = "Vaishali Swaminathan"
+package_author_email = ""
+package_license = "MIT License"
+summary = "Python BMI wrapper for TOPMODEL"
+
+[ci]
+os = ["linux"]
+python_version = ["3.11"]
