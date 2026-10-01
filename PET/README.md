@@ -1,11 +1,11 @@
-# CFE BMI Python Wrapper (`pymt_cfe`)
+# PET BMI Python Wrapper (`pymt_pet`)
 
-Python BMI wrapper for the [NOAA-OWP CFE](https://github.com/NOAA-OWP/cfe), generated using [Babelizer](https://babelizer.readthedocs.io).
+Python BMI wrapper for the [NOAA-OWP PET / Evapotranspiration](https://github.com/NOAA-OWP/evapotranspiration) module, generated using [Babelizer](https://babelizer.readthedocs.io).
 
 This repository provides a Docker-based workflow to:
 
-1. Build NOAA-OWP CFE (`NGEN` mode) BMI C model
-2. Generate a Python BMI wrapper (`pymt_cfe`) with Babelizer
+1. Build the NOAA-OWP PET BMI C model
+2. Generate a Python BMI wrapper (`pymt_pet`) with Babelizer
 3. Test the wrapper in-container
 4. Build distributable artifacts (`.tar.gz`, wheel) with `uv`
 5. Install from the built tarball
@@ -15,7 +15,7 @@ This repository provides a Docker-based workflow to:
 ## Repository layout
 
 ```text
-CFE/
+PET/
 ├── README.md
 ├── QUICKSTART.md
 ├── Dockerfile
@@ -23,7 +23,7 @@ CFE/
 ├── regen_and_build.sh
 ├── post_babelize_patch.sh
 ├── install.sh
-└── pymt_cfe/          # generated + patched Python wrapper package
+└── pymt_pet/          # generated + patched Python wrapper package
 ```
 
 ---
@@ -32,11 +32,11 @@ CFE/
 
 - Docker installed and running
 - This repository checked out locally
-- Run commands from this `CFE` folder
+- Run commands from this `PET` folder
 
 ## Environment recommendation
 
-For local testing/installation outside Docker, install `pymt_cfe` in an isolated environment (recommended):
+For local testing/installation outside Docker, install `pymt_pet` in an isolated environment (recommended):
 
 - Conda env, or
 - Python virtual environment (`venv`)
@@ -46,26 +46,26 @@ This prevents dependency conflicts with your base environment and makes troubles
 Example with `venv`:
 
 ```bash
-python -m venv .venv-pymt-cfe
-source .venv-pymt-cfe/bin/activate
+python -m venv .venv-pymt-pet
+source .venv-pymt-pet/bin/activate
 python -m pip install --upgrade pip
 ```
 
 Example with conda:
 
 ```bash
-conda create -n pymt-cfe python=3.11 -y
-conda activate pymt-cfe
+conda create -n pymt-pet python=3.11 -y
+conda activate pymt-pet
 ```
 
 ---
 
 ## 1) Build the Docker image
 
-Use image name **`cfe-babelizer`**:
+Use image name **`pet-babelizer`**:
 
 ```bash
-docker build --pull --no-cache -t cfe-babelizer .
+docker build --pull --no-cache -t pet-babelizer .
 ```
 
 > `--no-cache` is recommended when troubleshooting dependency/build changes.
@@ -80,16 +80,17 @@ Mount the current host folder into the container at `/workspace/user`:
 docker run --rm -it \
   -v "$(pwd)":/workspace/user \
   -w /workspace/user \
-  cfe-babelizer
+  pet-babelizer
 ```
 
 Notes:
-- CFE is already cloned and built inside the image at `/workspace/cfe`.
-- `LD_LIBRARY_PATH` is set in the image to `/workspace/cfe/build`.
+
+- The NOAA-OWP `evapotranspiration` repository is already cloned and built inside the image at `/workspace/evapotranspiration`.
+- `LD_LIBRARY_PATH` is set in the image to the PET library/build directory.
 
 ---
 
-## 3) Generate the CFE BMI Python module with Babelizer
+## 3) Generate the PET BMI Python module with Babelizer
 
 Inside the container:
 
@@ -98,7 +99,7 @@ Inside the container:
 babelize init babel.toml
 ```
 
-This generates/updates the `pymt_cfe/` package scaffold.
+This generates/updates the `pymt_pet/` package scaffold.
 
 ### Reapply local custom patches after regeneration
 
@@ -109,8 +110,9 @@ Babelizer can overwrite custom files. Use:
 ```
 
 This reapplies:
-- `pymt_cfe/pymt_cfe/__init__.py` (`importlib.metadata` version handling)
-- `pymt_cfe/setup.py` (portable CFE path discovery)
+
+- `pymt_pet/pymt_pet/__init__.py` (`importlib.metadata` version handling)
+- `pymt_pet/setup.py` (portable PET path discovery)
 
 ### One-shot regenerate + patch + build
 
@@ -118,10 +120,10 @@ Optional cleanup before regeneration (recommended while iterating):
 
 ```bash
 # from /workspace/user
-python -m pip uninstall -y pymt_cfe || true
-rm -rf pymt_cfe/build pymt_cfe/dist pymt_cfe/*.egg-info
-find pymt_cfe -type d -name "__pycache__" -prune -exec rm -rf {} +
-find pymt_cfe -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
+python -m pip uninstall -y pymt_pet || true
+rm -rf pymt_pet/build pymt_pet/dist pymt_pet/*.egg-info
+find pymt_pet -type d -name "__pycache__" -prune -exec rm -rf {} +
+find pymt_pet -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
 ```
 
 Then run:
@@ -132,37 +134,39 @@ Then run:
 
 ---
 
-## 4) Test `pymt_cfe` in the container
+## 4) Test `pymt_pet` in the container
 
-Install editable (from generated package folder):
+Install editable from the generated package folder:
 
 ```bash
-cd /workspace/user/pymt_cfe
+cd /workspace/user/pymt_pet
 python -m pip install -e . --no-build-isolation
 ```
 
 Quick import test:
 
 ```bash
-python -c "from pymt_cfe import CFE; print('pymt_cfe import OK')"
-python -c "from pymt_cfe.lib import CFE; m=CFE(); print(m.get_component_name())"
+python -c "from pymt_pet import PET; print('pymt_pet import OK')"
+python -c "from pymt_pet.lib import PET; m=PET(); print(m.get_component_name())"
 ```
 
 If needed, verify the extension and linked libraries:
 
 ```bash
-python -c "import pymt_cfe.lib.cfe as m; print(m.__file__)"
-ldd $(python -c "import pymt_cfe.lib.cfe as m; print(m.__file__)")
+python -c "import pymt_pet.lib.pet as m; print(m.__file__)"
+ldd $(python -c "import pymt_pet.lib.pet as m; print(m.__file__)")
 ```
+
+> Depending on the module name generated by Babelizer, the compiled extension under `pymt_pet.lib` may have a slightly different name. Check the contents of `pymt_pet/pymt_pet/lib/` if the command above does not match the generated module.
 
 ---
 
 ## 5) Build distributable package files (`tar.gz` and wheel)
 
-Inside `pymt_cfe/`:
+Inside `pymt_pet/`:
 
 ```bash
-cd /workspace/user/pymt_cfe
+cd /workspace/user/pymt_pet
 rm -rf build dist *.egg-info
 uv build
 ```
@@ -170,7 +174,7 @@ uv build
 Artifacts are created in:
 
 ```text
-/workspace/user/pymt_cfe/dist/
+/workspace/user/pymt_pet/dist/
 ```
 
 Optional checks:
@@ -183,40 +187,44 @@ uvx twine check dist/*
 
 ## 6) Install using built `.tar.gz`
 
-### In a target environment (example)
+### In a target environment
 
-Direct install may work if CFE paths are auto-detected. If not, set CFE paths explicitly first.
+Direct installation may work if PET paths are auto-detected. If not, set the PET paths explicitly first.
 
 ```bash
 # Recommended explicit setup for direct install
-# Find the path containing the cfe bmi.h header file
-find / -name 'bmi.h' 2>/dev/null
-export CFE_ROOT=/path/to/cfe header file # directory containing cfe bmi.h
 
-# Find the path containing libcfebmi.so*
-find / -name "libcfebmi.so*" 2>/dev/null
-export CFE_LIB_DIR=/path/to/cfe/build   # directory containing libcfebmi.so*
+# Find the PET source directory containing the BMI/header files
+find / -path '*evapotranspiration*' -name 'bmi*.h' 2>/dev/null
 
-export LD_LIBRARY_PATH="$CFE_LIB_DIR:$LD_LIBRARY_PATH"
+export PET_ROOT=/path/to/evapotranspiration
 
-uv pip install /path/to/pymt_cfe-0.1.tar.gz
+# Find the directory containing libpetbmi.so*
+find / -name "libpetbmi.so*" 2>/dev/null
+
+export PET_LIB_DIR=/path/to/evapotranspiration/build
+
+export LD_LIBRARY_PATH="$PET_LIB_DIR:$LD_LIBRARY_PATH"
+
+uv pip install /path/to/pymt_pet-0.1.tar.gz
 ```
 
 If `uv` is not available:
 
 ```bash
-python -m pip install /path/to/pymt_cfe-0.1.tar.gz
+python -m pip install /path/to/pymt_pet-0.1.tar.gz
 ```
 
 ### Helper installer script (recommended)
 
-This repo includes `install.sh` (same directory as tarball) that:
-- Detects active conda env
-- Finds CFE paths programmatically
-- Sets required env vars for installation
-- Installs tarball with the active env's `python -m pip`
+This repo includes `install.sh` in the same directory as the tarball. It:
+
+- Detects the active conda environment
+- Finds PET source/header and library paths programmatically
+- Sets required environment variables for installation
+- Installs the tarball with the active environment's `python -m pip`
 - Avoids mixed JupyterHub conda compiler/linker setups
-- Writes conda activation hook to set `LD_LIBRARY_PATH`
+- Writes a conda activation hook to set `LD_LIBRARY_PATH`
 
 Use this script to avoid manual path exports where possible.
 
@@ -229,10 +237,41 @@ chmod +x install.sh
 
 ---
 
+## PET configuration
+
+The NOAA-OWP PET module supports several potential evapotranspiration formulations, including:
+
+- Energy Balance
+- Aerodynamic
+- Combination
+- Priestley–Taylor
+- Penman–Monteith
+
+PET instances are initialized using PET configuration files, typically named:
+
+```text
+pet_config*.txt
+```
+
+The configuration specifies PET method and model settings such as meteorological forcing options, vegetation characteristics, site latitude/longitude/elevation, roughness parameters, and radiation-related options.
+
+Example configuration files are available in the upstream PET repository under:
+
+```text
+evapotranspiration/configs/
+```
+
+When testing the Python wrapper beyond basic import/BMI introspection, initialize the model using an appropriate PET configuration file corresponding to the PET method and forcing configuration you want to use.
+
+---
+
 ## Architecture note (important)
 
-Wheels are platform-specific. Example:
-- wheel built on `aarch64` will not install on `x86_64`
+Wheels are platform-specific.
+
+Example:
+
+- A wheel built on `aarch64` will not install on `x86_64`.
 
 For cross-platform testing, prefer installing the source distribution (`.tar.gz`) on the target machine, or build wheels on matching architecture.
 
@@ -242,81 +281,147 @@ For cross-platform testing, prefer installing the source distribution (`.tar.gz`
 
 1. `babelize init babel.toml`
 2. `./post_babelize_patch.sh`
-3. `cd pymt_cfe && uv build`
+3. `cd pymt_pet && uv build`
 4. `uvx twine check dist/*`
-5. Test install from `dist/pymt_cfe-<version>.tar.gz` in a clean env
-6. Verify import/runtime (`from pymt_cfe import CFE`)
+5. Test install from `dist/pymt_pet-<version>.tar.gz` in a clean environment
+6. Verify import/runtime (`from pymt_pet import PET`)
+7. Initialize PET with a valid `pet_config*.txt`
+8. Verify BMI inputs, outputs, timestep, and PET output through the Python wrapper
 
 ---
 
 ## Jupyter Notebook / JupyterHub usage
 
-If `pymt_cfe` works in terminal but fails in a notebook with:
-
-- `ImportError: libcfebmi.so... not found`
-
-set `LD_LIBRARY_PATH` in the Jupyter kernel spec (not in a notebook cell with `!export`, which does not persist to the Python kernel process).
-
-1. Create/select a user kernel for your env:
-
-```bash
-python -m ipykernel install --user --name pymt-cfe --display-name "Python (pymt-cfe)"
-```
-
-2. Edit the kernel file (typically):
+If `pymt_pet` works in a terminal but fails in a notebook with an error such as:
 
 ```text
-~/.local/share/jupyter/kernels/pymt-cfe/kernel.json
+ImportError: libpetbmi.so... not found
 ```
+
+set `LD_LIBRARY_PATH` in the Jupyter kernel specification rather than in a notebook cell with `!export`.
+
+A command such as:
 
 ```bash
-# Find the path to the `libcfebmi.so` file
-find / -name "libcfebmi.so*" 2>/dev/null
+!export LD_LIBRARY_PATH=...
 ```
 
-3. Add top-level `env` key:
+runs in a child shell and does not modify the environment of the already-running Python kernel.
+
+### 1. Create/select a user kernel for your environment
+
+```bash
+python -m ipykernel install --user --name pymt-pet --display-name "Python (pymt-pet)"
+```
+
+### 2. Locate the kernel file
+
+Typically:
+
+```text
+~/.local/share/jupyter/kernels/pymt-pet/kernel.json
+```
+
+Find the PET BMI shared library:
+
+```bash
+find / -name "libpetbmi.so*" 2>/dev/null
+```
+
+### 3. Add a top-level `env` key
 
 ```json
 {
   "argv": ["/path/to/python", "-m", "ipykernel_launcher", "-f", "{connection_file}"],
-  "display_name": "Python (pymt-cfe)",
+  "display_name": "Python (pymt-pet)",
   "language": "python",
   "metadata": {},
   "env": {
-    "LD_LIBRARY_PATH": "/path/to libcfebmi.so file"
+    "LD_LIBRARY_PATH": "/path/to/directory/containing/libpetbmi.so"
   }
 }
 ```
 
-4. Restart kernel and re-run notebook.
+### 4. Restart the kernel
+
+Restart the Jupyter kernel and rerun the notebook.
 
 ### Alternative when editing `kernel.json` is difficult
 
-If modifying kernelspec files is not convenient, preload `libcfebmi` in the first notebook cell before importing `pymt_cfe`:
+If modifying kernelspec files is not convenient, preload `libpetbmi` in the first notebook cell before importing `pymt_pet`:
 
 ```python
 import ctypes
-ctypes.CDLL("/path/to/libcfebmi.so.1.0.0", mode=ctypes.RTLD_GLOBAL)
+
+ctypes.CDLL(
+    "/path/to/libpetbmi.so",
+    mode=ctypes.RTLD_GLOBAL
+)
 ```
 
 Then import normally:
 
 ```python
-from pymt_cfe import CFE
+from pymt_pet import PET
 ```
 
-> Note: this must be run in each notebook session unless you configure kernel `env` or use a startup hook like `sitecustomize.py`.
+> This must be run in each notebook session unless the library path is configured through the kernel environment, conda activation scripts, `sitecustomize.py`, or another persistent mechanism.
+
+---
 
 ## Troubleshooting quick hits
 
 - **`No module named pkg_resources`**
-  - Ensure patched `__init__.py` is present (`./post_babelize_patch.sh`).
+  - Ensure the patched `__init__.py` is present:
+    ```bash
+    ./post_babelize_patch.sh
+    ```
 
-- **`fatal error: bmi.h: No such file or directory`**
-  - CFE headers not discovered. Use patched `setup.py` and/or set `CFE_ROOT`.
+- **`fatal error: bmi.h: No such file or directory`** or PET-specific header not found
+  - PET headers were not discovered.
+  - Verify the patched `setup.py`.
+  - Set `PET_ROOT` explicitly if automatic discovery fails:
+    ```bash
+    export PET_ROOT=/path/to/evapotranspiration
+    ```
 
-- **`ImportError: libcfebmi.so... not found`**
-  - Runtime linker cannot find CFE library; set `LD_LIBRARY_PATH` to CFE lib/build dir.
+- **`ImportError: libpetbmi.so... not found`**
+  - The runtime linker cannot find the PET BMI library.
+  - Find it:
+    ```bash
+    find / -name "libpetbmi.so*" 2>/dev/null
+    ```
+  - Add its directory to:
+    ```bash
+    export LD_LIBRARY_PATH="/path/to/pet/build:$LD_LIBRARY_PATH"
+    ```
 
-- **`cannot find -lcfebmi` during build**
-  - Build linker cannot find CFE library directory; ensure `CFE_LIB_DIR`/`CFE_ROOT` resolve correctly.
+- **`cannot find -lpetbmi` during build**
+  - The build linker cannot find the PET BMI library directory.
+  - Verify that `PET_LIB_DIR` and/or `PET_ROOT` resolve correctly:
+    ```bash
+    export PET_ROOT=/path/to/evapotranspiration
+    export PET_LIB_DIR=/path/to/evapotranspiration/build
+    ```
+
+- **PET initializes but fails with a configuration error**
+  - Verify that the path passed to BMI initialization points to a valid PET configuration file.
+  - Check that the selected PET method and required meteorological inputs are consistent with the configuration.
+  - Use one of the upstream `configs/pet_config*.txt` files as a reference.
+
+- **Wrapper imports but PET shared library cannot resolve another dependency**
+  - Inspect the compiled extension:
+    ```bash
+    ldd $(python -c "import pymt_pet.lib.pet as m; print(m.__file__)")
+    ```
+  - Also inspect PET itself:
+    ```bash
+    ldd /path/to/libpetbmi.so
+    ```
+
+- **Wheel installs on one system but not another**
+  - Confirm architecture:
+    ```bash
+    uname -m
+    ```
+  - Rebuild the wheel on the target architecture or install from the source distribution (`.tar.gz`).
