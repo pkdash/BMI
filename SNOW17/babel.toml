@@ -1,0 +1,37 @@
+[library.SNOW17]
+language = "fortran"
+library = "snow17bmi"
+header = ""
+entry_point = "register_bmi"
+
+[build]
+undef_macros = []
+define_macros = []
+libraries = []
+library_dirs = [
+    "/workspace/snow17/cmake_build"
+]
+include_dirs = [
+    "/workspace/snow17/cmake_build",
+    "/workspace/snow17/cmake_build/iso_c_bmi",
+    "/workspace/snow17/src/bmi",
+    "/workspace/snow17/src/share",
+    "/workspace/snow17/src/driver",
+    "/workspace/snow17/src/snow19"
+]
+extra_compile_args = []
+
+[package]
+name = "pymt_snow17"
+requirements = []
+
+[info]
+github_username = "vaishswami"
+package_author = "Vaishali Swaminathan"
+package_author_email = ""
+package_license = "Apache Software License 2.0"
+summary = "Python BMI wrapper for NOAA-OWP Snow17"
+
+[ci]
+python_version = ["3.11"]
+os = ["linux"]

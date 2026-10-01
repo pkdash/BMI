@@ -1,0 +1,20 @@
+recursive-include pymt_sac_sma/data *
+include LICENSE
+include requirements.txt
+include *.rst
+include *.txt
+include Makefile
+include babel.toml
+recursive-include pymt_sac_sma *.pyx
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
+recursive-exclude meta *
+recursive-exclude recipe *
+recursive-exclude pymt_sac_sma *.cpp
+recursive-exclude pymt_sac_sma *.c
+recursive-include pymt_sac_sma *.pyx
+recursive-include pymt_sac_sma *.c
+recursive-include pymt_sac_sma *.f90
+recursive-include pymt_sac_sma *.h
+recursive-include pymt_sac_sma *.yaml

@@ -1,0 +1,4 @@
+name: pymt_sac_sma
+language: fortran
+package: pymt_sac_sma
+class: SAC_SMA

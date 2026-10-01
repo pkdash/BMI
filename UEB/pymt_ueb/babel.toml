@@ -1,0 +1,37 @@
+[library.UEB]
+language = "c++"
+library = "bmiuebcxx"
+header = "bmi_ueb.hxx"
+entry_point = "BmiUEB"
+
+
+[build]
+undef_macros = []
+define_macros = []
+libraries = []
+library_dirs = [
+    "/workspace/ueb_bmi/cmake_build/src"
+]
+include_dirs = [
+    "/workspace/ueb_bmi/src/bmi",
+    "/workspace/ueb_bmi/src/ueb",
+    "/workspace/ueb_bmi/src/utilities",
+    "/workspace/bmi-cxx"
+]
+extra_compile_args = []
+
+[package]
+name = "pymt_ueb"
+requirements = []
+
+[info]
+github_username = "vaishaliswaminathan"
+package_author = "Vaishali Swaminathan"
+package_author_email = "vaishaliswaminathan@tamu.edu"
+package_license = "MIT License"
+summary = "Python BMI wrapper for the Utah Energy Balance snow model"
+
+[ci]
+python_version = ["3.11"]
+os = ["linux"]
+

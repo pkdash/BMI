@@ -1,0 +1,4 @@
+name: pymt_snow17
+language: fortran
+package: pymt_snow17
+class: SNOW17
