@@ -20,43 +20,43 @@ cdef extern from "bmi_lgar.hxx":
         void Update() except +
         void UpdateUntil(double) except +
         void Finalize() except +
-        string GetComponentName()
-        int GetInputItemCount()
-        int GetOutputItemCount()
-        vector[string] GetInputVarNames()
-        vector[string] GetOutputVarNames()
-        int GetVarGrid(string)
-        string GetVarType(string)
-        int GetVarItemsize(string)
-        string GetVarUnits(string)
-        int GetVarNbytes(string)
-        string GetVarLocation(string)
-        double GetCurrentTime()
-        double GetStartTime()
-        double GetEndTime()
-        string GetTimeUnits()
-        double GetTimeStep()
-        void GetValue(string, void*)
-        void* GetValuePtr(string)
-        void GetValueAtIndices(string, void*, int*, int)
-        void SetValue(string, void*)
-        void SetValueAtIndices(string, int*, int, void*)
-        int GetGridRank(int)
-        int GetGridSize(int)
-        string GetGridType(int)
-        void GetGridShape(int, int*)
-        void GetGridSpacing(int, double*)
-        void GetGridOrigin(int, double*)
-        void GetGridX(int, double*)
-        void GetGridY(int, double*)
-        void GetGridZ(int, double*)
-        int GetGridNodeCount(int)
-        int GetGridEdgeCount(int)
-        int GetGridFaceCount(int)
-        void GetGridEdgeNodes(int, int*)
-        void GetGridFaceEdges(int, int*)
-        void GetGridFaceNodes(int, int*)
-        void GetGridNodesPerFace(int, int*)
+        string GetComponentName() except +
+        int GetInputItemCount() except +
+        int GetOutputItemCount() except +
+        vector[string] GetInputVarNames() except +
+        vector[string] GetOutputVarNames() except +
+        int GetVarGrid(string) except +
+        string GetVarType(string) except +
+        int GetVarItemsize(string) except +
+        string GetVarUnits(string) except +
+        int GetVarNbytes(string) except +
+        string GetVarLocation(string) except +
+        double GetCurrentTime() except +
+        double GetStartTime() except +
+        double GetEndTime() except +
+        string GetTimeUnits() except +
+        double GetTimeStep() except +
+        void GetValue(string, void*) except +
+        void* GetValuePtr(string) except +
+        void GetValueAtIndices(string, void*, int*, int) except +
+        void SetValue(string, void*) except +
+        void SetValueAtIndices(string, int*, int, void*) except +
+        int GetGridRank(int) except +
+        int GetGridSize(int) except +
+        string GetGridType(int) except +
+        void GetGridShape(int, int*) except +
+        void GetGridSpacing(int, double*) except +
+        void GetGridOrigin(int, double*) except +
+        void GetGridX(int, double*) except +
+        void GetGridY(int, double*) except +
+        void GetGridZ(int, double*) except +
+        int GetGridNodeCount(int) except +
+        int GetGridEdgeCount(int) except +
+        int GetGridFaceCount(int) except +
+        void GetGridEdgeNodes(int, int*) except +
+        void GetGridFaceEdges(int, int*) except +
+        void GetGridFaceNodes(int, int*) except +
+        void GetGridNodesPerFace(int, int*) except +
 
 cdef class LASAM:
     cdef BmiLGAR _bmi
@@ -71,7 +71,7 @@ cdef class LASAM:
     def get_input_var_names(self): return tuple(self._bmi.GetInputVarNames())
     def get_output_var_names(self): return tuple(self._bmi.GetOutputVarNames())
     def get_var_grid(self, name): return self._bmi.GetVarGrid(name)
-    def get_var_type(self, name): return self._bmi.GetVarType(name)
+    def get_var_type(self, name): return DTYPE_MAP.get(self._bmi.GetVarType(name), self._bmi.GetVarType(name))
     def get_var_itemsize(self, name): return self._bmi.GetVarItemsize(name)
     def get_var_units(self, name): return self._bmi.GetVarUnits(name)
     def get_var_nbytes(self, name): return self._bmi.GetVarNbytes(name)
@@ -88,7 +88,8 @@ cdef class LASAM:
         cdef int nbytes = self._bmi.GetVarNbytes(name)
         cdef int itemsize = self._bmi.GetVarItemsize(name)
         cdef Py_ssize_t count = nbytes // itemsize if itemsize > 0 else 0
-        dtype_str = DTYPE_MAP.get(self.get_var_type(name), "float64")
+        c_type = self._bmi.GetVarType(name)
+        dtype_str = DTYPE_MAP.get(c_type, "float64")
         if ptr == NULL: raise RuntimeError(f"LASAM returned null pointer for {name!r}")
         if dtype_str == "float64": return np.asarray(<np.float64_t[:count]>(<np.float64_t*>ptr))
         if dtype_str == "float32": return np.asarray(<np.float32_t[:count]>(<np.float32_t*>ptr))
@@ -96,7 +97,7 @@ cdef class LASAM:
         if dtype_str == "int64": return np.asarray(<np.int64_t[:count]>(<np.int64_t*>ptr))
         if dtype_str == "uint32": return np.asarray(<np.uint32_t[:count]>(<np.uint32_t*>ptr))
         if dtype_str == "uint64": return np.asarray(<np.uint64_t[:count]>(<np.uint64_t*>ptr))
-        raise TypeError(f"Unsupported LASAM BMI type: {self.get_var_type(name)!r}")
+        raise TypeError(f"Unsupported LASAM BMI type: {c_type!r}")
     def get_value_at_indices(self, name, np.ndarray dest, np.ndarray[np.int32_t, ndim=1, mode="c"] inds):
         self._bmi.GetValueAtIndices(name, <void*>dest.data, <int*>inds.data, inds.shape[0]); return dest
     def set_value(self, name, np.ndarray src):
@@ -162,3 +163,29 @@ setup(name="pymt_lasam", version="0.1.0", author="Vaishali Swaminathan", author_
 PY
 
 sed -i 's/recursive-exclude pymt_lasam \*\.cpp/recursive-include pymt_lasam *.cpp/' "${PKG_DIR}/MANIFEST.in" 2>/dev/null || true
+
+# Pin numpy<2 in the build requirements. The primary consumer (NOAA-OWP/ngen)
+# hard-rejects numpy>=2.0.0 at CMake configure time, so the extension must be
+# built against the same major version. Babelizer regenerates pyproject.toml
+# with an unpinned numpy.
+PYPROJECT="${PKG_DIR}/pyproject.toml"
+if [[ -f "${PYPROJECT}" ]]; then
+python - "${PYPROJECT}" <<'PYEOF'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+if '"numpy<2"' not in text:
+    text = text.replace('"numpy"', '"numpy<2"', 1)
+    comment = (
+        "# numpy is pinned below 2 deliberately. The primary consumer of this wrapper\n"
+        "# (NOAA-OWP/ngen) hard-rejects numpy>=2.0.0 at CMake configure time, so the\n"
+        "# extension must be built against the same major version it will be imported\n"
+        "# alongside. Leaving this unpinned also makes isolated pip builds drift as new\n"
+        "# numpy majors are released.\n"
+    )
+    text = text.replace("requires = [", comment + "requires = [", 1)
+path.write_text(text)
+PYEOF
+fi
