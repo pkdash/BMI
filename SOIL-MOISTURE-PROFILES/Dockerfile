@@ -19,8 +19,8 @@ RUN micromamba install -y -n base -c conda-forge \
     uv \
     pip \
     setuptools=69.5.1 \
-    "numpy<2" \
-    cython \
+    numpy=1.26.4 \
+    cython=3.0.11 \
     wheel \
     compilers \
     && micromamba clean --all --yes
