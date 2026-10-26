@@ -1,0 +1,4 @@
+name: pymt_topmodel
+language: c
+package: pymt_topmodel
+class: TOPMODEL

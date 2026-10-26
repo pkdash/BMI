@@ -52,61 +52,61 @@ cdef extern from "bmi_soil_freeze_thaw.hxx":
 
         #  Model control functions.
         void Initialize(string config_file) except +
-        void Update()
-        void UpdateUntil(double time)
-        void Finalize()
+        void Update() except +
+        void UpdateUntil(double time) except +
+        void Finalize() except +
 
         #  Model information functions.
-        string GetComponentName()
-        int GetInputItemCount()
-        int GetOutputItemCount()
-        vector[string] GetInputVarNames()
-        vector[string] GetOutputVarNames()
+        string GetComponentName() except +
+        int GetInputItemCount() except +
+        int GetOutputItemCount() except +
+        vector[string] GetInputVarNames() except +
+        vector[string] GetOutputVarNames() except +
 
         #  Variable information functions
-        int GetVarGrid(string name)
-        string GetVarType(string name)
-        string GetVarUnits(string name)
-        int GetVarItemsize(string name)
-        int GetVarNbytes(string name)
-        string GetVarLocation(string name)
+        int GetVarGrid(string name) except +
+        string GetVarType(string name) except +
+        string GetVarUnits(string name) except +
+        int GetVarItemsize(string name) except +
+        int GetVarNbytes(string name) except +
+        string GetVarLocation(string name) except +
 
-        double GetCurrentTime()
-        double GetStartTime()
-        double GetEndTime()
-        string GetTimeUnits()
-        double GetTimeStep()
+        double GetCurrentTime() except +
+        double GetStartTime() except +
+        double GetEndTime() except +
+        string GetTimeUnits() except +
+        double GetTimeStep() except +
 
         #  Variable getters
-        void GetValue(string name, void *dest)
-        void *GetValuePtr(string name)
-        void GetValueAtIndices(string name, void *dest, int *inds, int count)
+        void GetValue(string name, void *dest) except +
+        void *GetValuePtr(string name) except +
+        void GetValueAtIndices(string name, void *dest, int *inds, int count) except +
 
         #  Variable setters
-        void SetValue(string name, void *src)
-        void SetValueAtIndices(string name, int *inds, int count, void *src)
+        void SetValue(string name, void *src) except +
+        void SetValueAtIndices(string name, int *inds, int count, void *src) except +
 
         #  Grid information functions
-        int GetGridRank(const int grid)
-        int GetGridSize(const int grid)
-        string GetGridType(const int grid)
+        int GetGridRank(const int grid) except +
+        int GetGridSize(const int grid) except +
+        string GetGridType(const int grid) except +
 
-        void GetGridShape(const int grid, int *shape)
-        void GetGridSpacing(const int grid, double *spacing)
-        void GetGridOrigin(const int grid, double *origin)
+        void GetGridShape(const int grid, int *shape) except +
+        void GetGridSpacing(const int grid, double *spacing) except +
+        void GetGridOrigin(const int grid, double *origin) except +
 
-        void GetGridX(const int grid, double *x)
-        void GetGridY(const int grid, double *y)
-        void GetGridZ(const int grid, double *z)
+        void GetGridX(const int grid, double *x) except +
+        void GetGridY(const int grid, double *y) except +
+        void GetGridZ(const int grid, double *z) except +
 
-        int GetGridNodeCount(const int grid)
-        int GetGridEdgeCount(const int grid)
-        int GetGridFaceCount(const int grid)
+        int GetGridNodeCount(const int grid) except +
+        int GetGridEdgeCount(const int grid) except +
+        int GetGridFaceCount(const int grid) except +
 
-        void GetGridEdgeNodes(const int grid, int *edge_nodes)
-        void GetGridFaceEdges(const int grid, int *face_edges)
-        void GetGridFaceNodes(const int grid, int *face_nodes)
-        void GetGridNodesPerFace(const int grid, int *nodes_per_face)
+        void GetGridEdgeNodes(const int grid, int *edge_nodes) except +
+        void GetGridFaceEdges(const int grid, int *face_edges) except +
+        void GetGridFaceNodes(const int grid, int *face_nodes) except +
+        void GetGridNodesPerFace(const int grid, int *nodes_per_face) except +
 
 
 cdef class SFT:
@@ -160,7 +160,7 @@ cdef class SFT:
         return self._bmi.GetVarGrid(name)
 
     def get_var_type(self, name):
-        return self._bmi.GetVarType(name)
+        return DTYPE_MAP.get(self._bmi.GetVarType(name), self._bmi.GetVarType(name))
 
     def get_var_units(self, name):
         return self._bmi.GetVarUnits(name)
@@ -207,7 +207,7 @@ cdef class SFT:
         cdef void *ptr
         ptr = self._bmi.GetValuePtr(name)
 
-        var_type  = self.get_var_type(name)
+        var_type  = self._bmi.GetVarType(name)
         nbytes    = self.get_var_nbytes(name)
         itemsize  = self.get_var_itemsize(name)
         count     = nbytes // itemsize if itemsize > 0 else 0
@@ -236,6 +236,8 @@ cdef class SFT:
 
     def set_value(self, name, np.ndarray src):
         """Set model variable *name* from the numpy array *src*."""
+        if not src.flags["C_CONTIGUOUS"]:
+            src = np.ascontiguousarray(src)
         self._bmi.SetValue(name, <void *>src.data)
 
     def set_value_at_indices(self, name,
@@ -491,10 +493,13 @@ setup(
     name="pymt_sft",
     author="Pabitra Dash",
     author_email="pkdash_reena@hotmail.com",
-    description="PyMT plugin for pymt_sft",
+    description="PyMT plugin for NOAA-OWP SoilFreezeThaw",
     long_description=long_description,
     version="0.1",
-    url="https://github.com/pkdash/pymt_sft",
+    url="https://github.com/NOAA-OWP/SoilFreezeThaw",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/SOIL-FREEZE-THAW/pymt_sft",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -525,6 +530,32 @@ if [[ -f "${MANIFEST_IN}" ]]; then
 fi
 
 echo
+# Pin numpy<2 in the build requirements. The primary consumer (NOAA-OWP/ngen)
+# hard-rejects numpy>=2.0.0 at CMake configure time, so the extension must be
+# built against the same major version. Babelizer regenerates pyproject.toml
+# with an unpinned numpy.
+PYPROJECT="${PKG_DIR}/pyproject.toml"
+if [[ -f "${PYPROJECT}" ]]; then
+python - "${PYPROJECT}" <<'PYEOF'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+if '"numpy<2"' not in text:
+    text = text.replace('"numpy"', '"numpy<2"', 1)
+    comment = (
+        "# numpy is pinned below 2 deliberately. The primary consumer of this wrapper\n"
+        "# (NOAA-OWP/ngen) hard-rejects numpy>=2.0.0 at CMake configure time, so the\n"
+        "# extension must be built against the same major version it will be imported\n"
+        "# alongside. Leaving this unpinned also makes isolated pip builds drift as new\n"
+        "# numpy majors are released.\n"
+    )
+    text = text.replace("requires = [", comment + "requires = [", 1)
+path.write_text(text)
+PYEOF
+fi
+
 echo "Done. Patched:"
 echo "  - ${PYX_FILE}  (full BMI implementation replacing babelizer skeleton)"
 echo "  - ${PKG_DIR}/pymt_sft/__init__.py"

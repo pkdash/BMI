@@ -36,9 +36,11 @@ def _discover_noah_paths():
         os.path.join(noah_root, "include") if noah_root else "",
         os.path.join(noah_root, "src") if noah_root else "",
         os.path.join(noah_root, "bmi") if noah_root else "",
+        os.path.join(noah_root, "cmake_build", "mod") if noah_root else "",
         "/workspace/noah-owp-modular/include",
         "/workspace/noah-owp-modular/src",
         "/workspace/noah-owp-modular/bmi",
+        "/workspace/noah-owp-modular/cmake_build/mod",
     ]
 
     library_candidates = [
@@ -46,8 +48,10 @@ def _discover_noah_paths():
         os.path.join(sys.prefix, "lib"),
         os.path.join(noah_root, "build") if noah_root else "",
         os.path.join(noah_root) if noah_root else "",
+        os.path.join(noah_root, "cmake_build") if noah_root else "",
         "/workspace/noah-owp-modular/build",
         "/workspace/noah-owp-modular",
+        "/workspace/noah-owp-modular/cmake_build",
     ]
 
     return _unique_existing(include_candidates), _unique_existing(library_candidates)
@@ -82,11 +86,6 @@ common_flags = {
     "define_macros": [],
     "undef_macros": [],
     "extra_compile_args": [],
-    "extra_link_args": (
-        [f"-Wl,-rpath,{d}" for d in library_dirs]
-        if not sys.platform.startswith("win")
-        else []
-    ),
     "language": "c",
 }
 
@@ -160,10 +159,10 @@ setup(
     name="pymt_noah_owp",
     author="Pabitra Dash",
     author_email="pkdash_reena@hotmail.com",
-    description="PyMT plugin for pymt_noah_owp",
+    description="PyMT plugin for NOAA-OWP Noah-OWP",
     long_description=long_description,
-    version="0.2.0",
-    url="https://github.com/pkdash/BMI",
+    version="0.1",
+    url="https://github.com/NOAA-OWP/noah-owp-modular",
     project_urls={
         "Source": "https://github.com/pkdash/BMI/tree/main/NOAH_OWP/pymt_noah_owp",
     },
