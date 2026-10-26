@@ -23,6 +23,9 @@ RUN micromamba install -y -n base -c conda-forge \
     cython \
     wheel \
     compilers \
+    cmake \
+    make \
+    libboost-devel \
     && micromamba clean --all --yes
 
 WORKDIR /workspace
@@ -30,20 +33,19 @@ WORKDIR /workspace
 # Clone TOPMODEL
 RUN git clone --recurse-submodules https://github.com/NOAA-OWP/topmodel.git
 
-WORKDIR /workspace/topmodel/src
+WORKDIR /workspace/topmodel
 
-# Build TOPMODEL using its Makefile
-RUN make clean && make
-
-# Build shared TOPMODEL BMI library for Babelizer/PyMT
-RUN mkdir -p /workspace/topmodel/build && \
-    gcc -fPIC -shared \
-      -I/workspace/topmodel/include \
-      -I/workspace/topmodel/src \
-      /workspace/topmodel/src/bmi_topmodel.c \
-      /workspace/topmodel/src/topmodel.c \
-      -o /workspace/topmodel/build/libtopmodelbmi.so && \
-    ls -lh /workspace/topmodel/build/libtopmodelbmi.so
+# Build the TOPMODEL BMI shared library with CMake.
+# Upstream NOAA-OWP/topmodel is a CMake project (there is no Makefile), and the BMI
+# library now also compiles src/bmi_serialization.cpp (C++17) and links Boost::serialization.
+# Activate the conda env so CMake finds conda-forge's Boost (>= 1.86) and compilers.
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
+RUN cmake -B build -S . \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+      -DTESTS_WITH_ASAN=OFF && \
+    cmake --build build -j"$(nproc)" --target topmodelbmi && \
+    ls -lh /workspace/topmodel/build/libtopmodelbmi.so*
 
 ENV LD_LIBRARY_PATH=/workspace/topmodel/build:/workspace/topmodel/src
 

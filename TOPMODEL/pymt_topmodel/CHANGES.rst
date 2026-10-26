@@ -5,7 +5,7 @@ Changelog for pymt_topmodel
 -------------------
 
 
-0.1.0 (2026-07-03)
+0.1.0 (2026-10-26)
 ------------------
 
 - Initial release

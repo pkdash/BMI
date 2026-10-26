@@ -191,10 +191,13 @@ setup(
     name="pymt_topmodel",
     author="Vaishali Swaminathan",
     author_email="",
-    description="PyMT plugin for pymt_topmodel",
+    description="PyMT plugin for NOAA-OWP TOPMODEL",
     long_description=long_description,
     version="0.1",
-    url="https://github.com/vaishswami/pymt_topmodel",
+    url="https://github.com/NOAA-OWP/topmodel",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/TOPMODEL/pymt_topmodel",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -230,6 +233,32 @@ text = text.replace(
 )
 if "recursive-include pymt_topmodel *.c" not in text:
     text = text.rstrip() + "\nrecursive-include pymt_topmodel *.c\n"
+path.write_text(text)
+PYEOF
+fi
+
+# Pin numpy<2 in the build requirements. The primary consumer (NOAA-OWP/ngen)
+# hard-rejects numpy>=2.0.0 at CMake configure time, so the extension must be
+# built against the same major version. Babelizer regenerates pyproject.toml
+# with an unpinned numpy.
+PYPROJECT="${PKG_DIR}/pyproject.toml"
+if [[ -f "${PYPROJECT}" ]]; then
+python - "${PYPROJECT}" <<'PYEOF'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+if '"numpy<2"' not in text:
+    text = text.replace('"numpy"', '"numpy<2"', 1)
+    comment = (
+        "# numpy is pinned below 2 deliberately. The primary consumer of this wrapper\n"
+        "# (NOAA-OWP/ngen) hard-rejects numpy>=2.0.0 at CMake configure time, so the\n"
+        "# extension must be built against the same major version it will be imported\n"
+        "# alongside. Leaving this unpinned also makes isolated pip builds drift as new\n"
+        "# numpy majors are released.\n"
+    )
+    text = text.replace("requires = [", comment + "requires = [", 1)
 path.write_text(text)
 PYEOF
 fi

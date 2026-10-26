@@ -4,7 +4,6 @@ library = "topmodelbmi"
 header = "bmi_topmodel.h"
 entry_point = "register_bmi_topmodel"
 
-
 [build]
 undef_macros = []
 define_macros = []

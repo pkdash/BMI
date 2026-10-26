@@ -1,44 +1,41 @@
-# QUICKSTART
+# QUICKSTART - TOPMODEL Python BMI Wrapper
 
-Minimal copy-paste workflow.
+Minimal copy-paste workflow to build, install, and test the TOPMODEL Python BMI wrapper.
 
-## 1) Build image
+## 1. Build the Docker image
 
 ```bash
 docker build --pull --no-cache -t topmodel-babelizer .
 ```
 
-## 2) Run container (mount current folder)
+## 2. Run the container (mount current folder)
+
+Linux/macOS:
 
 ```bash
-# Linux/MacOS
 docker run --rm -it \
   -v "$(pwd)":/workspace/user \
   -w /workspace/user \
   topmodel-babelizer
 ```
 
+Windows (PowerShell):
+
 ```powershell
-# Windows (PowerShell)
 docker run --rm -it `
   -v "${PWD}:/workspace/user" `
   -w /workspace/user `
   topmodel-babelizer
 ```
 
-```cmd
-:: Windows (Command Prompt)
-docker run --rm -it ^
-  -v "%cd%:/workspace/user" ^
-  -w /workspace/user ^
-  topmodel-babelizer
-```
+## 3. Generate wrapper + patch + build
 
-## 3) Generate wrapper + patch + build
-
-Inside container:
+Inside the container:
 
 ```bash
+cd /workspace/user
+sed -i 's/\r//' *.sh
+chmod +x *.sh
 ./regen_and_build.sh
 ```
 
@@ -48,21 +45,25 @@ This runs:
 - `./post_babelize_patch.sh`
 - `uv build` in `pymt_topmodel/`
 
-Artifacts end up in:
+Artifacts are written to:
 
 ```text
 pymt_topmodel/dist/
 ```
 
-## 4) Test in container
+## 4. Test inside the container
 
 ```bash
 cd /workspace/user/pymt_topmodel
+# ngen currently requires numpy<2 (NOAA-OWP/ngen CMakeLists.txt), so this wrapper is
+# built against numpy<2. --no-build-isolation ignores the pin in pyproject.toml, so make
+# sure the environment has it first:  python -m pip install "numpy<2"
 python -m pip install -e . --no-build-isolation
 python -c "from pymt_topmodel import TOPMODEL; print('pymt_topmodel import OK')"
+python -c "from pymt_topmodel import TOPMODEL; m=TOPMODEL(); print(m.get_component_name())"
 ```
 
-## 5) Install from tar.gz (target env)
+## 5. Install from the source distribution (tar.gz) in another environment (e.g. JupyterHub)
 
 Recommended: use an isolated env first.
 
@@ -93,6 +94,19 @@ uv pip install /path/to/pymt_topmodel-0.1.tar.gz
 python -m pip install /path/to/pymt_topmodel-0.1.tar.gz
 ```
 
+Test the installation (no model config needed):
+
+```bash
+python - <<'PY'
+from pymt_topmodel import TOPMODEL
+m = TOPMODEL()
+print(m.get_component_name())
+print("inputs :", m.get_input_var_names())
+print("outputs:", m.get_output_var_names())
+print("pymt_topmodel import OK")
+PY
+```
+
 ## Notes
 
 - Wheels are architecture-specific (`aarch64` vs `x86_64`).
@@ -103,7 +117,7 @@ python -m pip install /path/to/pymt_topmodel-0.1.tar.gz
 The shell scripts (`*.sh`) must have Unix LF line endings or bash inside the
 Linux container will fail with errors like:
 
-```
+```text
 $'\r': command not found
 ```
 

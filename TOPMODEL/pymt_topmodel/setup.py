@@ -156,10 +156,13 @@ setup(
     name="pymt_topmodel",
     author="Vaishali Swaminathan",
     author_email="",
-    description="PyMT plugin for pymt_topmodel",
+    description="PyMT plugin for NOAA-OWP TOPMODEL",
     long_description=long_description,
     version="0.1",
-    url="https://github.com/vaishswami/pymt_topmodel",
+    url="https://github.com/NOAA-OWP/topmodel",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/TOPMODEL/pymt_topmodel",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
