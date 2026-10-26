@@ -157,6 +157,9 @@ setup(
     long_description=long_description,
     version="0.1",
     url="https://github.com/NOAA-OWP/SoilMoistureProfiles",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/SOIL-MOISTURE-PROFILES/pymt_smp",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",

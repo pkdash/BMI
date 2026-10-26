@@ -4,7 +4,6 @@ library = "smpbmi"
 header = "bmi_soil_moisture_profile.hxx"
 entry_point = "BmiSoilMoistureProfile"
 
-
 [build]
 undef_macros = []
 define_macros = []

@@ -68,7 +68,9 @@ pymt_smp/dist/pymt_smp-0.1-*.whl
 pyenv activate Ngen_venv_py3_10_3
 export CONDA_PREFIX=$(pyenv prefix)
 
-cd "/mnt/c/Users/Vaishali/Desktop/NextGen/BMI Functions/Python wrappers/pymt_smp_setup"
+# Directory containing install.sh and pymt_smp-0.1.tar.gz
+# (on WSL, Windows drives are under /mnt/c/..., e.g. /mnt/c/Users/<you>/...)
+cd /path/to/pymt_smp_setup
 
 export SMP_ROOT=$HOME/NextGenVS/ngen/extern/SoilMoistureProfiles/SoilMoistureProfiles
 export SMP_LIB_DIR=$HOME/NextGenVS/ngen/extern/SoilMoistureProfiles/cmake_build
