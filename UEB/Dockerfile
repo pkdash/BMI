@@ -10,6 +10,7 @@ RUN for i in {1..5}; do apt-get update && break || sleep 15; done && \
       git \
       pkg-config \
       libboost-serialization-dev \
+      libboost-iostreams-dev \
       libnetcdf-dev \
       netcdf-bin \
     && rm -rf /var/lib/apt/lists/*
@@ -26,6 +27,8 @@ RUN micromamba install -y -n base -c conda-forge \
       cython \
       wheel \
       compilers \
+      libboost-devel \
+      libnetcdf \
     && micromamba clean --all --yes
 
 WORKDIR /workspace

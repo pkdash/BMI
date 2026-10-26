@@ -120,8 +120,11 @@ setup(
     version="0.1.0",
     author="Vaishali Swaminathan",
     author_email="vaishaliswaminathan@tamu.edu",
-    description="PyMT plugin for the UEB snow model",
+    description="PyMT plugin for NGWPC UEB",
     url="https://github.com/NGWPC/ueb_bmi",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/UEB/pymt_ueb",
+    },
     license="MIT",
     packages=find_packages(),
     include_package_data=True,

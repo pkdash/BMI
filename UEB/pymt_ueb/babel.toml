@@ -4,7 +4,6 @@ library = "bmiuebcxx"
 header = "bmi_ueb.hxx"
 entry_point = "BmiUEB"
 
-
 [build]
 undef_macros = []
 define_macros = []

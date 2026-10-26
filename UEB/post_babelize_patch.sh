@@ -39,51 +39,51 @@ cdef extern from "bmi_ueb.hxx" namespace "ueb":
         void UpdateUntil(double time) except +
         void Finalize() except +
 
-        string GetComponentName()
-        int GetInputItemCount()
-        int GetOutputItemCount()
-        vector[string] GetInputVarNames()
-        vector[string] GetOutputVarNames()
+        string GetComponentName() except +
+        int GetInputItemCount() except +
+        int GetOutputItemCount() except +
+        vector[string] GetInputVarNames() except +
+        vector[string] GetOutputVarNames() except +
 
-        int GetVarGrid(string name)
-        string GetVarType(string name)
-        int GetVarItemsize(string name)
-        string GetVarUnits(string name)
-        int GetVarNbytes(string name)
-        string GetVarLocation(string name)
+        int GetVarGrid(string name) except +
+        string GetVarType(string name) except +
+        int GetVarItemsize(string name) except +
+        string GetVarUnits(string name) except +
+        int GetVarNbytes(string name) except +
+        string GetVarLocation(string name) except +
 
-        double GetCurrentTime()
-        double GetStartTime()
-        double GetEndTime()
-        string GetTimeUnits()
-        double GetTimeStep()
+        double GetCurrentTime() except +
+        double GetStartTime() except +
+        double GetEndTime() except +
+        string GetTimeUnits() except +
+        double GetTimeStep() except +
 
-        void GetValue(string name, void *dest)
-        void *GetValuePtr(string name)
-        void GetValueAtIndices(string name, void *dest, int *inds, int count)
-        void SetValue(string name, void *src)
-        void SetValueAtIndices(string name, int *inds, int count, void *src)
+        void GetValue(string name, void *dest) except +
+        void *GetValuePtr(string name) except +
+        void GetValueAtIndices(string name, void *dest, int *inds, int count) except +
+        void SetValue(string name, void *src) except +
+        void SetValueAtIndices(string name, int *inds, int count, void *src) except +
 
-        int GetGridRank(int grid)
-        int GetGridSize(int grid)
-        string GetGridType(int grid)
-        void GetGridShape(int grid, int *shape)
-        void GetGridSpacing(int grid, double *spacing)
-        void GetGridOrigin(int grid, double *origin)
-        void GetGridX(int grid, double *x)
-        void GetGridY(int grid, double *y)
-        void GetGridZ(int grid, double *z)
-        int GetGridNodeCount(int grid)
-        int GetGridEdgeCount(int grid)
-        int GetGridFaceCount(int grid)
-        void GetGridEdgeNodes(int grid, int *edge_nodes)
-        void GetGridFaceEdges(int grid, int *face_edges)
-        void GetGridFaceNodes(int grid, int *face_nodes)
-        void GetGridNodesPerFace(int grid, int *nodes_per_face)
+        int GetGridRank(int grid) except +
+        int GetGridSize(int grid) except +
+        string GetGridType(int grid) except +
+        void GetGridShape(int grid, int *shape) except +
+        void GetGridSpacing(int grid, double *spacing) except +
+        void GetGridOrigin(int grid, double *origin) except +
+        void GetGridX(int grid, double *x) except +
+        void GetGridY(int grid, double *y) except +
+        void GetGridZ(int grid, double *z) except +
+        int GetGridNodeCount(int grid) except +
+        int GetGridEdgeCount(int grid) except +
+        int GetGridFaceCount(int grid) except +
+        void GetGridEdgeNodes(int grid, int *edge_nodes) except +
+        void GetGridFaceEdges(int grid, int *face_edges) except +
+        void GetGridFaceNodes(int grid, int *face_nodes) except +
+        void GetGridNodesPerFace(int grid, int *nodes_per_face) except +
 
-        void GetStartTimeInGregorianCalendar(int& y, int& m, int& d, int& h)
-        void GetEndTimeInGregorianCalendar(int& y, int& m, int& d, int& h)
-        void GetCurrentTimeInGregorianCalendar(int& y, int& m, int& d, int& h)
+        void GetStartTimeInGregorianCalendar(int& y, int& m, int& d, int& h) except +
+        void GetEndTimeInGregorianCalendar(int& y, int& m, int& d, int& h) except +
+        void GetCurrentTimeInGregorianCalendar(int& y, int& m, int& d, int& h) except +
 
 
 cdef class UEB:
@@ -125,7 +125,7 @@ cdef class UEB:
         return self._bmi.GetVarGrid(name)
 
     def get_var_type(self, name):
-        return self._bmi.GetVarType(name)
+        return DTYPE_MAP.get(self._bmi.GetVarType(name), self._bmi.GetVarType(name))
 
     def get_var_itemsize(self, name):
         return self._bmi.GetVarItemsize(name)
@@ -164,7 +164,8 @@ cdef class UEB:
         cdef int itemsize = self._bmi.GetVarItemsize(name)
         cdef Py_ssize_t count = nbytes // itemsize if itemsize > 0 else 0
 
-        dtype_str = DTYPE_MAP.get(self.get_var_type(name), "float64")
+        c_type = self._bmi.GetVarType(name)
+        dtype_str = DTYPE_MAP.get(c_type, "float64")
 
         if ptr == NULL:
             raise RuntimeError(f"UEB returned a null pointer for variable {name!r}")
@@ -185,7 +186,7 @@ cdef class UEB:
             return np.asarray(<np.uint8_t[:count]>(<np.uint8_t *>ptr))
         elif dtype_str == "int8":
             return np.asarray(<np.int8_t[:count]>(<np.int8_t *>ptr))
-        raise TypeError(f"Unsupported UEB BMI type: {self.get_var_type(name)!r}")
+        raise TypeError(f"Unsupported UEB BMI type: {c_type!r}")
 
     def get_value_at_indices(self, name, np.ndarray dest,
                              np.ndarray[np.int32_t, ndim=1, mode="c"] inds):
@@ -428,8 +429,11 @@ setup(
     version="0.1.0",
     author="Vaishali Swaminathan",
     author_email="vaishaliswaminathan@tamu.edu",
-    description="PyMT plugin for the UEB snow model",
+    description="PyMT plugin for NGWPC UEB",
     url="https://github.com/NGWPC/ueb_bmi",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/UEB/pymt_ueb",
+    },
     license="MIT",
     packages=find_packages(),
     include_package_data=True,
@@ -444,6 +448,32 @@ PYEOF
 if [[ -f "${PKG_DIR}/MANIFEST.in" ]]; then
   sed -i 's/recursive-exclude pymt_ueb \*\.cpp/recursive-include pymt_ueb *.cpp/' \
     "${PKG_DIR}/MANIFEST.in"
+fi
+
+# Pin numpy<2 in the build requirements. The primary consumer (NOAA-OWP/ngen)
+# hard-rejects numpy>=2.0.0 at CMake configure time, so the extension must be
+# built against the same major version. Babelizer regenerates pyproject.toml
+# with an unpinned numpy.
+PYPROJECT="${PKG_DIR}/pyproject.toml"
+if [[ -f "${PYPROJECT}" ]]; then
+python - "${PYPROJECT}" <<'PYEOF'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+if '"numpy<2"' not in text:
+    text = text.replace('"numpy"', '"numpy<2"', 1)
+    comment = (
+        "# numpy is pinned below 2 deliberately. The primary consumer of this wrapper\n"
+        "# (NOAA-OWP/ngen) hard-rejects numpy>=2.0.0 at CMake configure time, so the\n"
+        "# extension must be built against the same major version it will be imported\n"
+        "# alongside. Leaving this unpinned also makes isolated pip builds drift as new\n"
+        "# numpy majors are released.\n"
+    )
+    text = text.replace("requires = [", comment + "requires = [", 1)
+path.write_text(text)
+PYEOF
 fi
 
 echo "Patched pymt_ueb for ueb::BmiUEB."

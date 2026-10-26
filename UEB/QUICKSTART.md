@@ -1,4 +1,6 @@
-# QUICKSTART: UEB Python BMI wrapper
+# QUICKSTART: UEB Python BMI Wrapper
+
+Minimal copy-paste workflow to build, install, and test the UBE Python BMI wrapper.
 
 ## 1. Build the Docker image
 
@@ -6,7 +8,7 @@
 docker build --pull --no-cache -t ueb-babelizer .
 ```
 
-## 2. Run it with this folder mounted
+## 2. Run container (mount current folder)
 
 Linux/macOS:
 
@@ -17,7 +19,7 @@ docker run --rm -it \
   ueb-babelizer
 ```
 
-Windows PowerShell:
+Windows (PowerShell):
 
 ```powershell
 docker run --rm -it `
@@ -31,10 +33,17 @@ docker run --rm -it `
 Inside the container:
 
 ```bash
+cd /workspace/user
 sed -i 's/\r//' *.sh
-chmod +x regen_and_build.sh post_babelize_patch.sh install.sh
+chmod +x *.sh
 ./regen_and_build.sh
 ```
+
+This runs:
+
+- `babelize init babel.toml`
+- `./post_babelize_patch.sh`
+- `uv build` in `pymt_ueb/`
 
 Artifacts are written to:
 
@@ -46,7 +55,11 @@ pymt_ueb/dist/
 
 ```bash
 cd /workspace/user/pymt_ueb
+# ngen currently requires numpy<2 (NOAA-OWP/ngen CMakeLists.txt), so this wrapper is
+# built against numpy<2. --no-build-isolation ignores the pin in pyproject.toml, so make
+# sure the environment has it first:  python -m pip install "numpy<2"
 python -m pip install -e . --no-build-isolation
+python -c "from pymt_ueb import UEB; print('pymt_ueb import OK')"
 python -c "from pymt_ueb import UEB; m=UEB(); print(m.get_component_name())"
 ```
 
@@ -74,29 +87,36 @@ model.finalize()
 PY
 ```
 
-## 6. Install the source distribution in another environment
+## 6. Install the source distribution (tar.gz) in another environment
 
-Copy `pymt_ueb-0.1.0.tar.gz` and `install.sh` into the same folder, activate the
-target Python environment, and run:
+Copy `pymt_ueb-0.1.0.tar.gz` and `install.sh` into a target folder.
+
+Recommended: use an isolated env first (at the target folder).
+
+```bash
+python -m venv .venv-pymt-cfe
+source .venv-pymt-cfe/bin/activate
+python -m pip install --upgrade pip
+```
+
+(Conda env is also fine.)
 
 ```bash
 chmod +x install.sh
 ./install.sh
 ```
 
-For the local NextGenVS layout, these paths will commonly be:
+Or direct install (set UEB paths explicitly if auto-detection fails):
 
 ```bash
 export UEB_ROOT="$HOME/NextGenVS/ueb_bmi"
 export UEB_LIB_DIR="$HOME/NextGenVS/ueb_bmi/cmake_build/src"
 export BMICXX_INCLUDE_DIRS="$HOME/NextGenVS/ngen/extern/bmi-cxx"
 export LD_LIBRARY_PATH="$UEB_LIB_DIR:$LD_LIBRARY_PATH"
-```
 
-Then:
-
-```bash
-./install.sh
+uv pip install /path/to/pymt_ueb-0.1.tar.gz
+# fallback
+python -m pip install /path/to/pymt_ueb-0.1.tar.gz
 ```
 
 ## Important UEB-specific details
@@ -112,3 +132,40 @@ Then:
   files during wrapper testing
 - `control.dat` may contain relative paths, so initialization is sensitive to
   the current working directory
+
+## Windows: CRLF line-ending fix
+
+The shell scripts (`*.sh`) must have Unix LF line endings or bash inside the
+Linux container will fail with errors like:
+
+```text
+$'\r': command not found
+```
+
+**Prevention (recommended):** The repo ships a `.gitattributes` file that
+forces LF for `*.sh`, `*.toml`, and `Dockerfile`. As long as you clone with a
+Git client that respects `.gitattributes` (Git ≥ 2.10), no extra steps are
+needed.
+
+**One-time fix if you already have CRLF files:**
+
+Option A — using Git:
+
+```powershell
+git config core.autocrlf false
+git rm --cached -r .
+git reset --hard
+```
+
+Option B — using `dos2unix` (install via [Chocolatey](https://chocolatey.org/) or WSL):
+
+```powershell
+dos2unix regen_and_build.sh post_babelize_patch.sh install.sh
+```
+
+Option C — inside the running container (quickest workaround):
+
+```bash
+sed -i 's/\r//' /workspace/user/regen_and_build.sh
+sed -i 's/\r//' /workspace/user/post_babelize_patch.sh
+```
