@@ -4,7 +4,6 @@ library = "sacbmi"
 header = ""
 entry_point = "register_bmi"
 
-
 [build]
 undef_macros = []
 define_macros = []

@@ -222,6 +222,9 @@ setup(
     author_email="vaishaliswaminathan@tamu.edu",
     description="PyMT plugin for NOAA-OWP Sac-SMA",
     url="https://github.com/NOAA-OWP/sac-sma",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/SAC_SMA/pymt_sac_sma",
+    },
     license="Apache-2.0",
     packages=find_packages(),
     include_package_data=True,
@@ -242,6 +245,32 @@ MANIFEST="${PKG_DIR}/MANIFEST.in"
   echo "recursive-include pymt_sac_sma *.h"
   echo "recursive-include pymt_sac_sma *.yaml"
 } >> "${MANIFEST}"
+
+# Pin numpy<2 in the build requirements. The primary consumer (NOAA-OWP/ngen)
+# hard-rejects numpy>=2.0.0 at CMake configure time, so the extension must be
+# built against the same major version. Babelizer regenerates pyproject.toml
+# with an unpinned numpy.
+PYPROJECT="${PKG_DIR}/pyproject.toml"
+if [[ -f "${PYPROJECT}" ]]; then
+python - "${PYPROJECT}" <<'PYEOF'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+if '"numpy<2"' not in text:
+    text = text.replace('"numpy"', '"numpy<2"', 1)
+    comment = (
+        "# numpy is pinned below 2 deliberately. The primary consumer of this wrapper\n"
+        "# (NOAA-OWP/ngen) hard-rejects numpy>=2.0.0 at CMake configure time, so the\n"
+        "# extension must be built against the same major version it will be imported\n"
+        "# alongside. Leaving this unpinned also makes isolated pip builds drift as new\n"
+        "# numpy majors are released.\n"
+    )
+    text = text.replace("requires = [", comment + "requires = [", 1)
+path.write_text(text)
+PYEOF
+fi
 
 echo
 echo "Patched:"
