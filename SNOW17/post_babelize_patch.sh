@@ -102,13 +102,39 @@ class build_ext(_build_ext):
 def read(filename):
     with open(filename,"r",encoding="utf-8") as fp: return fp.read()
 long_description="\n\n".join([read("README.rst"), read("CREDITS.rst"), read("CHANGES.rst")])
-setup(name="pymt_snow17", author="Vaishali Swaminathan", author_email="", description="PyMT plugin for NOAA-OWP Snow17", long_description=long_description, version="0.1", url="https://github.com/NOAA-OWP/snow17", classifiers=["Development Status :: 4 - Beta", "Intended Audience :: Science/Research", "License :: OSI Approved :: Apache Software License", "Operating System :: POSIX :: Linux", "Programming Language :: Python :: 3 :: Only"], keywords=["bmi","pymt","snow17","ngen"], install_requires=open("requirements.txt","r").read().splitlines(), setup_requires=["cython"], ext_modules=ext_modules, cmdclass=dict(build_ext=build_ext), packages=find_packages(), entry_points=entry_points, include_package_data=True)
+setup(name="pymt_snow17", author="Vaishali Swaminathan", author_email="", description="PyMT plugin for NOAA-OWP Snow17", long_description=long_description, version="0.1", url="https://github.com/NOAA-OWP/snow17", project_urls={"Source": "https://github.com/pkdash/BMI/tree/main/SNOW17/pymt_snow17"}, classifiers=["Development Status :: 4 - Beta", "Intended Audience :: Science/Research", "License :: OSI Approved :: Apache Software License", "Operating System :: POSIX :: Linux", "Programming Language :: Python :: 3 :: Only"], keywords=["bmi","pymt","snow17","ngen"], install_requires=open("requirements.txt","r").read().splitlines(), setup_requires=["cython"], ext_modules=ext_modules, cmdclass=dict(build_ext=build_ext), packages=find_packages(), entry_points=entry_points, include_package_data=True)
 PYEOF
 
 MANIFEST_FILE="${PKG_DIR}/MANIFEST.in"
 if [[ -f "${MANIFEST_FILE}" ]]; then
   grep -q "recursive-include pymt_snow17 .*\\*.f90" "${MANIFEST_FILE}" || echo "recursive-include pymt_snow17 *.f90" >> "${MANIFEST_FILE}"
   grep -q "recursive-include pymt_snow17 .*\\*.h" "${MANIFEST_FILE}" || echo "recursive-include pymt_snow17 *.h" >> "${MANIFEST_FILE}"
+fi
+
+# Pin numpy<2 in the build requirements. The primary consumer (NOAA-OWP/ngen)
+# hard-rejects numpy>=2.0.0 at CMake configure time, so the extension must be
+# built against the same major version. Babelizer regenerates pyproject.toml
+# with an unpinned numpy.
+PYPROJECT="${PKG_DIR}/pyproject.toml"
+if [[ -f "${PYPROJECT}" ]]; then
+python - "${PYPROJECT}" <<'PYEOF'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+if '"numpy<2"' not in text:
+    text = text.replace('"numpy"', '"numpy<2"', 1)
+    comment = (
+        "# numpy is pinned below 2 deliberately. The primary consumer of this wrapper\n"
+        "# (NOAA-OWP/ngen) hard-rejects numpy>=2.0.0 at CMake configure time, so the\n"
+        "# extension must be built against the same major version it will be imported\n"
+        "# alongside. Leaving this unpinned also makes isolated pip builds drift as new\n"
+        "# numpy majors are released.\n"
+    )
+    text = text.replace("requires = [", comment + "requires = [", 1)
+path.write_text(text)
+PYEOF
 fi
 
 echo "Done. Patched: ${PKG_DIR}"
