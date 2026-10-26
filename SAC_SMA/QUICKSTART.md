@@ -133,17 +133,19 @@ PY
 
 ## 7. Install locally against a NextGen checkout
 
-Expected layout:
+### 7.1 Expected directory structure
 
 ```text
 ~/NextGenVS/ngen/extern/
 ├── iso_c_fortran_bmi/
 └── sac-sma/
+    ├── CMakeLists.txt
     ├── src/bmi/bmi_sac.f90
-    └── cmake_build/libsacbmi.so
+    └── cmake_build/
+        └── libsacbmi.so
 ```
 
-Build the backend:
+### 7.2 Build the backend
 
 ```bash
 cd "$HOME/NextGenVS/ngen/extern"
@@ -160,7 +162,7 @@ cmake --build sac-sma/cmake_build \
   -j"$(nproc)"
 ```
 
-Set paths:
+### 7.3 Set environment and install
 
 ```bash
 export SAC_SMA_ROOT="$HOME/NextGenVS/ngen/extern/sac-sma"

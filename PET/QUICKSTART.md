@@ -129,6 +129,18 @@ PY
 
 ### 5.1. Local NextGen example
 
+#### 5.1.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+└── evapotranspiration/
+    ├── CMakeLists.txt
+    └── cmake_build/
+        └── libpetbmi.so
+```
+
+#### 5.1.2 Set environment and build
+
 ```bash
 export PET_ROOT="$HOME/NextGenVS/ngen/extern/evapotranspiration"
 export PET_LIB_DIR="$PET_ROOT/cmake_build"

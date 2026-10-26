@@ -135,6 +135,19 @@ PY
 
 ### 5.1. Local NextGen example
 
+#### 5.1.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+├── iso_c_fortran_bmi/
+└── snow17/
+    ├── CMakeLists.txt
+    └── cmake_build/
+        └── libsnow17bmi.so
+```
+
+#### 5.1.2 Set environment and build
+
 ```bash
 # activate your pyenv/venv/conda environment first (optional)
 export CONDA_PREFIX=$(pyenv prefix)   # or your venv/conda prefix

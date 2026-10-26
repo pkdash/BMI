@@ -133,6 +133,54 @@ python -m pip install /path/to/pymt_ueb-0.1.tar.gz
 - `control.dat` may contain relative paths, so initialization is sensitive to
   the current working directory
 
+## 5. Install locally against a NextGen checkout
+
+### 5.1 Expected directory structure
+
+```text
+~/NextGenVS/
+├── ngen/extern/
+│   └── bmi-cxx/
+│       └── bmi.hxx
+└── ueb_bmi/
+    ├── CMakeLists.txt
+    ├── src/bmi/bmi_ueb.hxx
+    └── cmake_build/src/
+        └── libbmiuebcxx.so
+```
+
+### 5.2 Build the backend
+
+```bash
+# UEB is typically cloned outside ngen/extern
+cd "$HOME/NextGenVS"
+git clone https://github.com/NOAA-OWP/ueb_bmi.git
+
+# Ensure BMI-CXX headers are available
+cd "$HOME/NextGenVS/ngen/extern"
+git clone https://github.com/csdms/bmi-cxx.git
+
+# Build UEB
+cmake \
+  -S "$HOME/NextGenVS/ueb_bmi" \
+  -B "$HOME/NextGenVS/ueb_bmi/cmake_build" \
+  -DBMICXX_INCLUDE_DIRS="$HOME/NextGenVS/ngen/extern/bmi-cxx" \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build "$HOME/NextGenVS/ueb_bmi/cmake_build" --target all -j"$(nproc)"
+```
+
+### 5.3 Set environment and install
+
+```bash
+export UEB_ROOT="$HOME/NextGenVS/ueb_bmi"
+export UEB_LIB_DIR="$UEB_ROOT/cmake_build/src"
+export BMICXX_INCLUDE_DIRS="$HOME/NextGenVS/ngen/extern/bmi-cxx"
+export LD_LIBRARY_PATH="$UEB_LIB_DIR:${LD_LIBRARY_PATH:-}"
+```
+
+Then run `install.sh` beside the generated tarball.
+
 ## Windows: CRLF line-ending fix
 
 The shell scripts (`*.sh`) must have Unix LF line endings or bash inside the

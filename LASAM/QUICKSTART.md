@@ -128,6 +128,18 @@ PY
 
 ### 5.1. Local NextGen example
 
+#### 5.1.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+└── LGAR-C/
+    ├── CMakeLists.txt
+    └── cmake_build/
+        └── liblasambmi.so
+```
+
+#### 5.1.2 Set environment and build
+
 ```bash
 export LASAM_ROOT="$HOME/NextGenVS/ngen/extern/LGAR-C"
 export LASAM_LIB_DIR="$LASAM_ROOT/cmake_build"

@@ -107,6 +107,43 @@ print("pymt_topmodel import OK")
 PY
 ```
 
+## 6. Install locally against a NextGen checkout
+
+### 6.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+└── topmodel/
+    ├── CMakeLists.txt
+    ├── src/bmi/bmi_topmodel.hxx
+    └── cmake_build/
+        └── libtopmodelbmi.so
+```
+
+### 6.2 Build the backend
+
+```bash
+cd "$HOME/NextGenVS/ngen/extern"
+git clone https://github.com/NOAA-OWP/topmodel.git
+
+cmake \
+  -S topmodel \
+  -B topmodel/cmake_build \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build topmodel/cmake_build --target topmodelbmi -j"$(nproc)"
+```
+
+### 6.3 Set environment and install
+
+```bash
+export TOPMODEL_ROOT="$HOME/NextGenVS/ngen/extern/topmodel"
+export TOPMODEL_LIB_DIR="$TOPMODEL_ROOT/cmake_build"
+export LD_LIBRARY_PATH="$TOPMODEL_LIB_DIR:${LD_LIBRARY_PATH:-}"
+```
+
+Then run `install.sh` beside the generated tarball.
+
 ## Notes
 
 - Wheels are architecture-specific (`aarch64` vs `x86_64`).

@@ -191,6 +191,47 @@ print("NOAH_OWP run OK")
 PY
 ```
 
+## 7. Install locally against a NextGen checkout
+
+### 7.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+├── iso_c_fortran_bmi/
+└── noah-owp-modular/
+    ├── CMakeLists.txt
+    ├── bmi/ (or cmake_build/mod/ for cmake builds)
+    └── cmake_build/
+        └── libsurfacebmi.so
+```
+
+### 7.2 Build the backend
+
+```bash
+cd "$HOME/NextGenVS/ngen/extern"
+git clone https://github.com/NOAA-OWP/noah-owp-modular.git
+
+# CMake build (recommended):
+cmake \
+  -S noah-owp-modular \
+  -B noah-owp-modular/cmake_build \
+  -DISO_C_FORTRAN_BMI_PATH="$HOME/NextGenVS/ngen/extern/iso_c_fortran_bmi" \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build noah-owp-modular/cmake_build --target surfacebmi -j"$(nproc)"
+```
+
+### 7.3 Set environment and install
+
+```bash
+export NOAH_ROOT="$HOME/NextGenVS/ngen/extern/noah-owp-modular"
+export NOAH_LIB_DIR="$NOAH_ROOT/cmake_build"
+export NOAH_BMI_DIR="$NOAH_LIB_DIR/mod"
+export LD_LIBRARY_PATH="$NOAH_LIB_DIR:${LD_LIBRARY_PATH:-}"
+```
+
+Then run `install.sh` beside the generated tarball.
+
 ---
 
 ## Notes

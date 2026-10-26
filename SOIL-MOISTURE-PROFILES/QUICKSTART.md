@@ -149,6 +149,46 @@ print("SMP import OK")
 PY
 ```
 
+## 7. Install locally against a NextGen checkout
+
+### 7.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+└── SoilMoistureProfiles/
+    ├── CMakeLists.txt
+    ├── SoilMoistureProfiles/
+    │   ├── include/
+    │   └── src/bmi/bmi_soil_moisture_profile.hxx
+    └── cmake_build/
+        └── libsmpbmi.so
+```
+
+### 7.2 Build the backend
+
+```bash
+cd "$HOME/NextGenVS/ngen/extern"
+git clone https://github.com/NOAA-OWP/SoilMoistureProfiles.git
+
+cmake \
+  -S SoilMoistureProfiles \
+  -B SoilMoistureProfiles/cmake_build \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build SoilMoistureProfiles/cmake_build --target smpi -j"$(nproc)"
+```
+
+### 7.3 Set environment and install
+
+```bash
+export SMP_ROOT="$HOME/NextGenVS/ngen/extern/SoilMoistureProfiles/SoilMoistureProfiles"
+export SMP_LIB_DIR="$HOME/NextGenVS/ngen/extern/SoilMoistureProfiles/cmake_build"
+export SMP_INCLUDE_DIR="$SMP_ROOT/include"
+export LD_LIBRARY_PATH="$SMP_LIB_DIR:${LD_LIBRARY_PATH:-}"
+```
+
+Then run `install.sh` beside the generated tarball.
+
 ## Important
 
 Use SMP names only:

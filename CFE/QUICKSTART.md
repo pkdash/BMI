@@ -129,6 +129,18 @@ PY
 
 ### 5.1. Local NextGen example
 
+#### 5.1.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+└── cfe/
+    ├── CMakeLists.txt
+    └── cmake_build/
+        └── libcfebmi.so
+```
+
+#### 5.1.2 Set environment and build
+
 ```bash
 export CFE_ROOT="$HOME/NextGenVS/ngen/extern/cfe"
 export CFE_LIB_DIR="$CFE_ROOT/cmake_build"

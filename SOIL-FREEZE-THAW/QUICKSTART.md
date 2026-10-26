@@ -125,6 +125,44 @@ PY
 - If the import fails with `libsftbmi.so not found`, set `LD_LIBRARY_PATH` to
   the SFT build directory.
 
+## 7. Install locally against a NextGen checkout
+
+### 7.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+└── soil-freeze-thaw/
+    ├── CMakeLists.txt
+    ├── src/bmi/bmi_soil_freeze_thaw.hxx
+    └── cmake_build/
+        └── libsftbmi.so
+```
+
+### 7.2 Build the backend
+
+```bash
+cd "$HOME/NextGenVS/ngen/extern"
+git clone https://github.com/NOAA-OWP/soil-freeze-thaw.git
+
+cmake \
+  -S soil-freeze-thaw \
+  -B soil-freeze-thaw/cmake_build \
+  -DNGEN=ON \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build soil-freeze-thaw/cmake_build --target sftbmi -j"$(nproc)"
+```
+
+### 7.3 Set environment and install
+
+```bash
+export SFT_ROOT="$HOME/NextGenVS/ngen/extern/soil-freeze-thaw"
+export SFT_LIB_DIR="$SFT_ROOT/cmake_build"
+export LD_LIBRARY_PATH="$SFT_LIB_DIR:${LD_LIBRARY_PATH:-}"
+```
+
+Then run `install.sh` beside the generated tarball.
+
 ## Windows: CRLF line-ending fix
 
 The shell scripts (`*.sh`) must have Unix LF line endings or bash inside the
