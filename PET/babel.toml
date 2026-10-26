@@ -1,21 +1,25 @@
-[library.TOPMODEL]
+[library.PET]
 language = "c"
-library = "topmodelbmi"
-header = "bmi_topmodel.h"
-entry_point = "register_bmi_topmodel"
+library = "petbmi"
+header = "bmi_pet.h"
+entry_point = "register_bmi_pet"
+
 
 [build]
-include_dirs = [
-    "/workspace/topmodel/include"
-]
-
+undef_macros = []
+define_macros = []
+libraries = []
 library_dirs = [
-    "/workspace/topmodel/build",
-    "/workspace/topmodel/src"
+    "/workspace/evapotranspiration/build"
 ]
+include_dirs = [
+    "/workspace/evapotranspiration/include",
+    "/workspace/evapotranspiration/extern/bmi-c/include"
+]
+extra_compile_args = []
 
 [package]
-name = "pymt_topmodel"
+name = "pymt_pet"
 requirements = []
 
 [info]
@@ -23,8 +27,8 @@ github_username = "vaishswami"
 package_author = "Vaishali Swaminathan"
 package_author_email = ""
 package_license = "MIT License"
-summary = "Python BMI wrapper for TOPMODEL"
+summary = "Python BMI wrapper for PET"
 
 [ci]
-os = ["linux"]
 python_version = ["3.11"]
+os = ["linux"]

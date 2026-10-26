@@ -1,41 +1,41 @@
-# QUICKSTART
+# QUICKSTART: PET Python BMI Wrapper
 
-Minimal copy-paste workflow.
+Minimal copy-paste workflow to build, install, and test the PET Python BMI wrapper.
 
-## 1) Build image
+## 1. Build the Dokcer image
 
 ```bash
 docker build --pull --no-cache -t pet-babelizer .
 ```
 
-## 2) Run container (mount current folder)
+## 2. Run container (mount current folder)
+
+Linux/macOS:
 
 ```bash
-# Linux/MacOS
 docker run --rm -it \
   -v "$(pwd)":/workspace/user \
   -w /workspace/user \
   pet-babelizer
 ```
 
+Windows (PowerShell):
+
 ```powershell
-# Windows (PowerShell)
 docker run --rm -it `
   -v "${PWD}:/workspace/user" `
   -w /workspace/user `
   pet-babelizer
 ```
 
-```cmd
-:: Windows (Command Prompt)
-docker run --rm -it -v "%cd%:/workspace/user" -w /workspace/user pet-babelizer
-```
-
-## 3) Generate wrapper + patch + build
+## 3. Generate wrapper + patch + build
 
 Inside container:
 
 ```bash
+cd /workspace/user
+sed -i 's/\r//' *.sh
+chmod +x *.sh
 ./regen_and_build.sh
 ```
 
@@ -45,21 +45,27 @@ This runs:
 - `./post_babelize_patch.sh`
 - `uv build` in `pymt_pet/`
 
-Artifacts end up in:
+Artifacts are written to:
 
 ```text
 pymt_pet/dist/
 ```
 
-## 4) Test in container
+## 4. Test inside the container
 
 ```bash
 cd /workspace/user/pymt_pet
+# ngen currently requires numpy<2 (NOAA-OWP/ngen CMakeLists.txt), so this wrapper is
+# built against numpy<2. --no-build-isolation ignores the pin in pyproject.toml, so make
+# sure the environment has it first:  python -m pip install "numpy<2"
 python -m pip install -e . --no-build-isolation
 python -c "from pymt_pet import PET; print('pymt_pet import OK')"
+python -c "from pymt_pet import PET; m=PET(); print(m.get_component_name())"
 ```
 
-## 5) Install from tar.gz (target env)
+## 5. Install from the source distribution (tar.gz) in another environment (e.g. JupyterHub)
+
+Copy `pymt_pte-*.tar.gz` and `install.sh` into a target folder.
 
 Recommended: use an isolated env first.
 
@@ -70,8 +76,6 @@ python -m pip install --upgrade pip
 ```
 
 (Conda env is also fine.)
-
-If `pymt_pet-*.tar.gz` is next to `install.sh`:
 
 ```bash
 chmod +x install.sh
@@ -85,9 +89,59 @@ export PET_ROOT=/path/to/evapotranspiration
 export PET_LIB_DIR=/path/to/evapotranspiration/build   # directory containing libpetbmi.so*
 export LD_LIBRARY_PATH="$PET_LIB_DIR:$LD_LIBRARY_PATH"
 
+# use the correct tar.gz file name here
 uv pip install /path/to/pymt_pet-0.1.tar.gz
 # fallback
 python -m pip install /path/to/pymt_pet-0.1.tar.gz
+```
+
+If this prints the component name and variable lists, the package and the
+`libpetbmi` shared library were found. An `ImportError`/`OSError` mentioning
+`libpetbmi.so` means `PET_LIB_DIR` / `LD_LIBRARY_PATH` is not set correctly.
+
+Test the installation (no model config needed):
+
+```bash
+python - <<'PY'
+from pymt_pet import PET
+m = PET()
+print(m.get_component_name())
+print("inputs :", m.get_input_var_names())
+print("outputs:", m.get_output_var_names())
+print("pymt_pet import OK")
+PY
+```
+
+Optional Test: run a short simulation with your own PET BMI config file:
+
+```bash
+python - <<'PY'
+from pymt_pet import PET
+m = PET()
+m.initialize("/path/to/pet_config.txt")   # PET BMI config file
+print("start/end/step:", m.get_start_time(), m.get_end_time(), m.get_time_step())
+m.update()
+print("time after one step:", m.get_current_time())
+m.finalize()
+print("PET run OK")
+PY
+```
+
+### 5.1. Local NextGen example
+
+```bash
+export PET_ROOT="$HOME/NextGenVS/ngen/extern/evapotranspiration"
+export PET_LIB_DIR="$PET_ROOT/cmake_build"
+export LD_LIBRARY_PATH="$PET_LIB_DIR:${LD_LIBRARY_PATH:-}"
+```
+
+Build backend if needed:
+
+```bash
+cd "$HOME/NextGenVS/ngen/extern"
+git clone https://github.com/NOAA-OWP/evapotranspiration.git
+cmake -B evapotranspiration/cmake_build -S evapotranspiration
+cmake --build evapotranspiration/cmake_build --target petbmi -j"$(nproc)"
 ```
 
 ## Notes
@@ -100,7 +154,7 @@ python -m pip install /path/to/pymt_pet-0.1.tar.gz
 The shell scripts (`*.sh`) must have Unix LF line endings or bash inside the
 Linux container will fail with errors like:
 
-```
+```text
 $'\r': command not found
 ```
 

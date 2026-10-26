@@ -154,10 +154,13 @@ setup(
     name="pymt_pet",
     author="Pabitra Dash",
     author_email="pkdash_reena@hotmail.com",
-    description="PyMT plugin for pymt_pet",
+    description="PyMT plugin for NOAA-OWP PET",
     long_description=long_description,
     version="0.1",
-    url="https://github.com/pkdash/pymt_pet",
+    url="https://github.com/NOAA-OWP/evapotranspiration",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/PET/pymt_pet",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
