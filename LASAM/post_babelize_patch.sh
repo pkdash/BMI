@@ -159,7 +159,7 @@ rpath=os.environ.get("LASAM_RPATH") or os.environ.get("LASAM_LIB_DIR")
 if rpath and Path(rpath).exists() and sys.platform.startswith("linux"): kwargs["runtime_library_dirs"]=[rpath]
 ext=[Extension("pymt_lasam.lib.lasam", **kwargs)]
 if cythonize is not None and source.endswith(".pyx"): ext=cythonize(ext, language_level=3)
-setup(name="pymt_lasam", version="0.1.0", author="Vaishali Swaminathan", author_email="vaishaliswaminathan@tamu.edu", description="PyMT plugin for LASAM/CASAM", url="https://github.com/NOAA-OWP/LGAR-C", license="Apache-2.0", packages=find_packages(), include_package_data=True, install_requires=["numpy"], ext_modules=ext, entry_points={"pymt.plugins":["LASAM=pymt_lasam.bmi:LASAM"]}, python_requires=">=3.10")
+setup(name="pymt_lasam", version="0.1.0", author="Vaishali Swaminathan", author_email="vaishaliswaminathan@tamu.edu", description="PyMT plugin for NOAA-OWP LASAM", url="https://github.com/NOAA-OWP/LGAR-C", project_urls={"Source": "https://github.com/pkdash/BMI/tree/main/LASAM/pymt_lasam"}, license="Apache-2.0", packages=find_packages(), include_package_data=True, install_requires=["numpy"], ext_modules=ext, entry_points={"pymt.plugins":["LASAM=pymt_lasam.bmi:LASAM"]}, python_requires=">=3.10")
 PY
 
 sed -i 's/recursive-exclude pymt_lasam \*\.cpp/recursive-include pymt_lasam *.cpp/' "${PKG_DIR}/MANIFEST.in" 2>/dev/null || true
