@@ -142,6 +142,7 @@ common_flags = {
     "define_macros": [],
     "undef_macros": [],
     "extra_compile_args": [],
+    "extra_link_args": [],
     "language": "c",
 }
 
@@ -166,6 +167,18 @@ def _extension_source():
 if sys.platform.startswith("win"):
     common_flags["include_dirs"].append(os.path.join(sys.prefix, "Library", "include"))
     common_flags["library_dirs"].append(os.path.join(sys.prefix, "Library", "lib"))
+
+# Embed the discovered library directories in the extension as a runtime search
+# path. Without this, `import pymt_cfe` fails with
+#   ImportError: libcfebmi.so: cannot open shared object file
+# unless the caller has already exported LD_LIBRARY_PATH, which forces every
+# consumer (conda activate.d hooks, venv wrappers, CI jobs) to reproduce the
+# same environment plumbing. Windows has no RPATH equivalent -- there the DLL
+# must be found via PATH.
+if not sys.platform.startswith("win"):
+    common_flags["extra_link_args"].extend(
+        "-Wl,-rpath,{0}".format(d) for d in common_flags["library_dirs"]
+    )
 
 ext_modules = [
     Extension(
@@ -198,10 +211,13 @@ setup(
     name="pymt_cfe",
     author="Pabitra Dash",
     author_email="pkdash_reena@hotmail.com",
-    description="PyMT plugin for pymt_cfe",
+    description="PyMT plugin for NOAA-OWP CFE",
     long_description=long_description,
-    version="0.1",
-    url="https://github.com/pkdash/pymt_cfe",
+    version="0.2.0",
+    url="https://github.com/NOAA-OWP/cfe",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/CFE/pymt_cfe",
+    },
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
@@ -221,7 +237,33 @@ setup(
 )
 PYEOF
 
-# 3) Keep generated C sources in source distributions. They are useful when
+# 3) Pin numpy<2 in the build requirements. The primary consumer (NOAA-OWP/ngen)
+# hard-rejects numpy>=2.0.0 at CMake configure time, so the extension must be
+# built against the same major version. Babelizer regenerates pyproject.toml
+# with an unpinned numpy.
+PYPROJECT="${PKG_DIR}/pyproject.toml"
+if [[ -f "${PYPROJECT}" ]]; then
+python - "${PYPROJECT}" <<'PYEOF'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+if '"numpy<2"' not in text:
+    text = text.replace('"numpy"', '"numpy<2"', 1)
+    comment = (
+        "# numpy is pinned below 2 deliberately. The primary consumer of this wrapper\n"
+        "# (NOAA-OWP/ngen) hard-rejects numpy>=2.0.0 at CMake configure time, so the\n"
+        "# extension must be built against the same major version it will be imported\n"
+        "# alongside. Leaving this unpinned also makes isolated pip builds drift as new\n"
+        "# numpy majors are released.\n"
+    )
+    text = text.replace("requires = [", comment + "requires = [", 1)
+path.write_text(text)
+PYEOF
+fi
+
+# 4) Keep generated C sources in source distributions. They are useful when
 # installing without build isolation or without Cython available.
 MANIFEST_IN="${PKG_DIR}/MANIFEST.in"
 if [[ -f "${MANIFEST_IN}" ]]; then
@@ -244,6 +286,7 @@ fi
 echo "Done. Patched:"
 echo "  - ${PKG_DIR}/pymt_cfe/__init__.py"
 echo "  - ${PKG_DIR}/setup.py"
+echo "  - ${PKG_DIR}/pyproject.toml"
 echo "  - ${PKG_DIR}/MANIFEST.in"
 echo
 echo "Next steps:"
