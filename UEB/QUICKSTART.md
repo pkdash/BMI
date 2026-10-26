@@ -133,7 +133,7 @@ python -m pip install /path/to/pymt_ueb-0.1.tar.gz
 - `control.dat` may contain relative paths, so initialization is sensitive to
   the current working directory
 
-## 5. Install locally against a NextGen checkout
+## 5. Install for a local NextGen setup
 
 ### 5.1 Expected directory structure
 

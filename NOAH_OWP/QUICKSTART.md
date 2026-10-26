@@ -191,7 +191,7 @@ print("NOAH_OWP run OK")
 PY
 ```
 
-## 7. Install locally against a NextGen checkout
+## 7. Install for a local NextGen setup
 
 ### 7.1 Expected directory structure
 

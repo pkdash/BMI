@@ -107,7 +107,7 @@ print("pymt_topmodel import OK")
 PY
 ```
 
-## 6. Install locally against a NextGen checkout
+## 6. Install for a local NextGen setup
 
 ### 6.1 Expected directory structure
 

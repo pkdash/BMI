@@ -133,7 +133,7 @@ print("SNOW17 run OK")
 PY
 ```
 
-### 5.1. Local NextGen example
+### 5.1. Install for a local NextGen setup
 
 #### 5.1.1 Expected directory structure
 
