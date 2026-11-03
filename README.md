@@ -9,7 +9,7 @@ This monorepo is used to:
 - Build and maintain Python-accessible BMI wrappers for multiple models
 - Keep each model implementation isolated while following shared conventions
 - Standardize regeneration, build, test, and packaging workflows
-- Make onboarding easier for future model wrappers (for example, NOAH-OWP)
+- Make onboarding easier for future model wrappers
 
 ## Repository Layout
 
@@ -17,16 +17,25 @@ This monorepo is used to:
 BMI/
 ├── README.md                  # Monorepo overview (this file)
 ├── .gitignore
-├── CFE/                       # CFE BMI wrapper (C)
+├── CFE/                        # CFE BMI wrapper (C)
 │   ├── README.md
 │   ├── QUICKSTART.md
 │   ├── babel.toml
-|   ├── Dockerfile
+│   ├── Dockerfile
 │   ├── regen_and_build.sh
 │   ├── post_babelize_patch.sh
 │   ├── install.sh
 │   └── pymt_cfe/
-└── NOAH_OWP/                  # Noah-OWP BMI wrapper (Fortran)
+├── LASAM/                      # LASAM/LGAR BMI wrapper (C++)
+│   ├── README.md
+│   ├── QUICKSTART.md
+│   ├── babel.toml
+│   ├── Dockerfile
+│   ├── regen_and_build.sh
+│   ├── post_babelize_patch.sh
+│   ├── install.sh
+│   └── pymt_lasam/
+├── NOAH_OWP/                   # Noah-OWP-Modular BMI wrapper (Fortran)
 │   ├── README.md
 │   ├── QUICKSTART.md
 │   ├── babel.toml
@@ -35,7 +44,61 @@ BMI/
 │   ├── post_babelize_patch.sh
 │   ├── install.sh
 │   └── pymt_noah_owp/
-└── SOIL-FREEZE-THAW/           # SoilFreezeThaw BMI wrapper (C++)
+├── PET/                        # PET / Evapotranspiration BMI wrapper (C)
+│   ├── README.md
+│   ├── QUICKSTART.md
+│   ├── babel.toml
+│   ├── Dockerfile
+│   ├── regen_and_build.sh
+│   ├── post_babelize_patch.sh
+│   ├── install.sh
+│   └── pymt_pet/
+├── SAC_SMA/                    # Sac-SMA BMI wrapper (Fortran)
+│   ├── README.md
+│   ├── QUICKSTART.md
+│   ├── babel.toml
+│   ├── Dockerfile
+│   ├── regen_and_build.sh
+│   ├── post_babelize_patch.sh
+│   ├── install.sh
+│   └── pymt_sac_sma/
+├── SNOW17/                     # Snow17 BMI wrapper (Fortran)
+│   ├── README.md
+│   ├── QUICKSTART.md
+│   ├── babel.toml
+│   ├── Dockerfile
+│   ├── regen_and_build.sh
+│   ├── post_babelize_patch.sh
+│   ├── install.sh
+│   └── pymt_snow17/
+├── SOIL-FREEZE-THAW/           # SoilFreezeThaw BMI wrapper (C++)
+│   ├── README.md
+│   ├── QUICKSTART.md
+│   ├── babel.toml
+│   ├── Dockerfile
+│   ├── regen_and_build.sh
+│   ├── post_babelize_patch.sh
+│   ├── install.sh
+│   └── pymt_sft/
+├── SOIL-MOISTURE-PROFILES/     # SoilMoistureProfiles BMI wrapper (C++)
+│   ├── README.md
+│   ├── QUICKSTART.md
+│   ├── babel.toml
+│   ├── Dockerfile
+│   ├── regen_and_build.sh
+│   ├── post_babelize_patch.sh
+│   ├── install.sh
+│   └── pymt_smp/
+├── TOPMODEL/                   # TOPMODEL BMI wrapper (C)
+│   ├── README.md
+│   ├── QUICKSTART.md
+│   ├── babel.toml
+│   ├── Dockerfile
+│   ├── regen_and_build.sh
+│   ├── post_babelize_patch.sh
+│   ├── install.sh
+│   └── pymt_topmodel/
+└── UEB/                        # UEB BMI wrapper (C++)
     ├── README.md
     ├── QUICKSTART.md
     ├── babel.toml
@@ -43,16 +106,8 @@ BMI/
     ├── regen_and_build.sh
     ├── post_babelize_patch.sh
     ├── install.sh
-    └── pymt_sft/
+    └── pymt_ueb/
 ```
-
-## Current Model Status
-
-| Model | Language | Package | Status |
-|---|---|---|---|
-| [CFE](https://github.com/NOAA-OWP/cfe) | C | `pymt_cfe` | ✅ Working |
-| [Noah-OWP Modular](https://github.com/NOAA-OWP/noah-owp-modular) | Fortran | `pymt_noah_owp` | ✅ Working |
-| [Soil Freeze Thaw](https://github.com/NOAA-OWP/SoilFreezeThaw) | C++ | `pymt_sft` | ✅ Working |
 
 ## Model Project Conventions
 
@@ -65,7 +120,7 @@ Each model folder should include:
 
 ## Contribution / Workflow
 
-1. Create a model folder at repo root (example: `NOAH_OWP/`).
+1. Create a model folder at repo root (example: `PET/`).
 2. Add model-specific `babel.toml` and package naming (`pymt_<model>`).
 3. Regenerate wrapper code with Babelizer.
 4. Apply local patches (if required for packaging/runtime).
