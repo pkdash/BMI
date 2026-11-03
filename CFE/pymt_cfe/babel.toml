@@ -4,7 +4,6 @@ library = "cfebmi"
 header = "bmi_cfe.h"
 entry_point = "register_bmi_cfe"
 
-
 [build]
 undef_macros = []
 define_macros = []

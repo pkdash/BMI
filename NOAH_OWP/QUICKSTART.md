@@ -1,10 +1,15 @@
-# QUICKSTART — `pymt_noah_owp`
+# QUICKSTART — NOAH-OWP Python BMI Wrapper
 
 Minimal copy-paste workflow to build, install, and test the NOAH-OWP Python BMI wrapper.
 
 ---
 
-## 1) Build the Docker image
+> **Note:** `Dockerfile` pins the upstream `noah-owp-modular` checkout to a
+> commit before it switched its build system from Make to CMake (2026-07-15).
+> This keeps `make clean && make testBMI` below working. See `README.md` for
+> details and a TODO to migrate this repo to the new CMake build.
+
+## 1. Build the Docker image
 
 ```bash
 docker build --pull --no-cache -t noah-owp-babelizer .
@@ -12,43 +17,41 @@ docker build --pull --no-cache -t noah-owp-babelizer .
 
 ---
 
-## 2) Run the container (mount current folder)
+## 2. Run the container (mount current folder)
+
+Linux/macOS:
 
 ```bash
-# Linux/MacOS
 docker run --rm -it \
   -v "$(pwd)":/workspace/user \
   -w /workspace/user \
   noah-owp-babelizer
 ```
 
+Windows (PowerShell):
+
 ```powershell
-# Windows (PowerShell)
 docker run --rm -it `
   -v "${PWD}:/workspace/user" `
   -w /workspace/user `
   noah-owp-babelizer
 ```
 
-```cmd
-:: Windows (Command Prompt)
-docker run --rm -it ^
-  -v "%cd%:/workspace/user" ^
-  -w /workspace/user ^
-  noah-owp-babelizer
-```
-
 ---
 
-## 3) Build Noah-OWP model + shared library (inside container)
+## 3. Build Noah-OWP model + shared library (inside container)
 
 ```bash
 cd /workspace/noah-owp-modular
-cp config/user_build_options.gfortran.linux user_build_options
-sed -i 's#^ COMPILERF90.*# COMPILERF90    =       gfortran#' user_build_options
-sed -i 's#^ NETCDFMOD.*# NETCDFMOD      =       -I/opt/conda/include#' user_build_options
-sed -i 's#^ NETCDFLIB.*# NETCDFLIB      =       -L/opt/conda/lib -lnetcdf -lnetcdff#' user_build_options
-sed -i 's#^ F90FLAGS.*# F90FLAGS       =       -g -fbacktrace -fPIC#' user_build_options
+
+# Create user_build_options with gfortran + conda-forge NetCDF settings
+cat > user_build_options << 'EOF'
+ COMPILERF90    =       gfortran
+ NETCDFMOD      =       -I/opt/conda/include
+ NETCDFLIB      =       -L/opt/conda/lib -lnetcdf -lnetcdff
+ F90FLAGS       =       -g -fbacktrace -fPIC
+EOF
+
 make clean && make testBMI
 
 gfortran -shared -fPIC \
@@ -59,19 +62,24 @@ gfortran -shared -fPIC \
 
 ---
 
-## 4) Generate wrapper + patch + build (inside container)
+## 4. Generate wrapper + patch + build
+
+Inside the container:
 
 ```bash
 cd /workspace/user
+sed -i 's/\r//' *.sh
+chmod +x *.sh
 ./regen_and_build.sh
 ```
 
 This runs:
+
 - `babelize init babel.toml`
 - `./post_babelize_patch.sh` (fixes Fortran module name mismatches + setup.py)
 - `uv build` in `pymt_noah_owp/`
 
-Artifacts end up in:
+Artifacts are written to:
 
 ```text
 pymt_noah_owp/dist/
@@ -79,12 +87,15 @@ pymt_noah_owp/dist/
 
 ---
 
-## 5) Test in container
+## 5. Test inside the container
 
 ```bash
 export LD_LIBRARY_PATH=/workspace/noah-owp-modular:/opt/conda/lib:$LD_LIBRARY_PATH
 
 cd /workspace/user/pymt_noah_owp
+# ngen currently requires numpy<2 (NOAA-OWP/ngen CMakeLists.txt), so this wrapper is
+# built against numpy<2. --no-build-isolation ignores the pin in pyproject.toml, so make
+# sure the environment has it first:  python -m pip install "numpy<2"
 pip install -e . --no-build-isolation
 
 python -c "from pymt_noah_owp import NOAH_OWP; print('pymt_noah_owp import OK')"
@@ -97,20 +108,19 @@ print('component name:', m.get_component_name())
 
 ---
 
-## 6) Install from tar.gz (target env e.g. JupyterHub)
+## 6. Install from the source distribution (tar.gz) in another environment (e.g. JupyterHub)
 
-Activate your conda environment first:
+Copy `pymt_noah_owp-*.tar.gz` and `install.sh` into a target folder.
 
-```bash
-conda activate <your-env>
-```
-
-Place `pymt_noah_owp-*.tar.gz` and `install.sh` in the same folder, then:
+Recommended: use an isolated env first.
 
 ```bash
-chmod +x install.sh
-./install.sh
+python -m venv .venv-pymt-noah-owp
+source .venv-pymt-noah-owp/bin/activate
+python -m pip install --upgrade pip
 ```
+
+(Conda env is also fine.)
 
 The script auto-detects `libsurfacebmi.so` and Fortran `.mod` file locations.
 If auto-detection fails, find the paths first:
@@ -131,8 +141,96 @@ export NOAH_BMI_DIR=/path/to/noah-owp-modular/cmake_build/mod
 export NOAH_LIB_DIR=/path/to/noah-owp-modular
 export NOAH_BMI_DIR=/path/to/noah-owp-modular/bmi
 
+chmod +x install.sh
 ./install.sh
 ```
+
+Or direct install (set NOAH-OWP paths explicitly if auto-detection fails):
+
+```bash
+export NOAH_ROOT=/path/to/noah-owp-modular
+export NOAH_LIB_DIR=/path/to/noah-owp-modular/cmake_build   # directory containing libsurfacebmi.so*
+export NOAH_BMI_DIR=/path/to/noah-owp-modular/cmake_build/mod   # directory containing bmif_2_0.mod
+export LD_LIBRARY_PATH="$NOAH_LIB_DIR:${LD_LIBRARY_PATH:-}"
+
+# use the correct tar.gz file name here
+uv pip install /path/to/pymt_noah_owp-0.1.tar.gz
+# fallback
+python -m pip install /path/to/pymt_noah_owp-0.1.tar.gz
+```
+
+If this prints the component name and variable lists, the package and the
+`libsurfacebmi` shared library were found. An `ImportError`/`OSError` mentioning
+`libsurfacebmi.so` means `NOAH_LIB_DIR` / `LD_LIBRARY_PATH` is not set correctly.
+
+Test the installation (no model config needed):
+
+```bash
+python - <<'PY'
+from pymt_noah_owp import NOAH_OWP
+m = NOAH_OWP()
+print(m.get_component_name())
+print("inputs :", m.get_input_var_names())
+print("outputs:", m.get_output_var_names())
+print("pymt_noah_owp import OK")
+PY
+```
+
+Optional Test: run a short simulation with your own NOAH-OWP BMI config file:
+
+```bash
+python - <<'PY'
+from pymt_noah_owp import NOAH_OWP
+m = NOAH_OWP()
+m.initialize("/path/to/noah_owp_config.namelist")   # NOAH-OWP BMI config file
+print("start/end/step:", m.get_start_time(), m.get_end_time(), m.get_time_step())
+m.update()
+print("time after one step:", m.get_current_time())
+m.finalize()
+print("NOAH_OWP run OK")
+PY
+```
+
+## 7. Install for a local NextGen setup
+
+### 7.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+├── iso_c_fortran_bmi/
+└── noah-owp-modular/
+    ├── CMakeLists.txt
+    ├── bmi/ (or cmake_build/mod/ for cmake builds)
+    └── cmake_build/
+        └── libsurfacebmi.so
+```
+
+### 7.2 Build the backend
+
+```bash
+cd "$HOME/NextGenVS/ngen/extern"
+git clone https://github.com/NOAA-OWP/noah-owp-modular.git
+
+# CMake build (recommended):
+cmake \
+  -S noah-owp-modular \
+  -B noah-owp-modular/cmake_build \
+  -DISO_C_FORTRAN_BMI_PATH="$HOME/NextGenVS/ngen/extern/iso_c_fortran_bmi" \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build noah-owp-modular/cmake_build --target surfacebmi -j"$(nproc)"
+```
+
+### 7.3 Set environment and install
+
+```bash
+export NOAH_ROOT="$HOME/NextGenVS/ngen/extern/noah-owp-modular"
+export NOAH_LIB_DIR="$NOAH_ROOT/cmake_build"
+export NOAH_BMI_DIR="$NOAH_LIB_DIR/mod"
+export LD_LIBRARY_PATH="$NOAH_LIB_DIR:${LD_LIBRARY_PATH:-}"
+```
+
+Then run `install.sh` beside the generated tarball.
 
 ---
 
@@ -147,7 +245,7 @@ export NOAH_BMI_DIR=/path/to/noah-owp-modular/bmi
 The shell scripts (`*.sh`) must have Unix LF line endings or bash inside the
 Linux container will fail with errors like:
 
-```
+```text
 $'\r': command not found
 ```
 

@@ -37,8 +37,14 @@ USER root
 WORKDIR /workspace
 
 # ─── Clone NOAA Noah-OWP Modular ──────────────────────────────────────────────
+# Pinned to the last commit before NOAA-OWP/noah-owp-modular replaced its
+# Makefile build with CMake (upstream commit eb4d16e, 2026-07-15). This repo's
+# build still targets the old `user_build_options` + `make testBMI` workflow
+# and `libsurfacebmi.so` output name. TODO: migrate this Dockerfile (and the
+# .pyx wrapper, which links against libsurfacebmi.so) to the new CMake build
+# and bump this back to `main`.
 ARG NOAH_REPO=https://github.com/NOAA-OWP/noah-owp-modular.git
-ARG NOAH_REF=main
+ARG NOAH_REF=a2a31fc0bd45e886810ac6080f9facd196c574d6
 ARG BUILD_NOAH=0
 
 RUN git clone --recurse-submodules ${NOAH_REPO} /workspace/noah-owp-modular && \
@@ -47,11 +53,7 @@ RUN git clone --recurse-submodules ${NOAH_REPO} /workspace/noah-owp-modular && \
 
 RUN if [ "${BUILD_NOAH}" = "1" ]; then \
       cd /workspace/noah-owp-modular && \
-      cp config/user_build_options.gfortran.linux user_build_options && \
-      sed -i 's#^ COMPILERF90.*# COMPILERF90    =       gfortran#' user_build_options && \
-      sed -i 's#^ NETCDFMOD.*# NETCDFMOD      =       -I/opt/conda/include#' user_build_options && \
-      sed -i 's#^ NETCDFLIB.*# NETCDFLIB      =       -L/opt/conda/lib -lnetcdf -lnetcdff#' user_build_options && \
-      sed -i 's#^ F90FLAGS.*# F90FLAGS       =       -g -fbacktrace -fPIC#' user_build_options && \
+      printf ' COMPILERF90    =       gfortran\n NETCDFMOD      =       -I/opt/conda/include\n NETCDFLIB      =       -L/opt/conda/lib -lnetcdf -lnetcdff\n F90FLAGS       =       -g -fbacktrace -fPIC\n' > user_build_options && \
       make -j$(nproc) testBMI && \
       gfortran -shared -fPIC \
         -o /workspace/noah-owp-modular/libsurfacebmi.so \

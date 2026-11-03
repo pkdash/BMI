@@ -29,6 +29,20 @@ NOAH_OWP/
 
 ---
 
+## Note on upstream pin
+
+The `Dockerfile` pins `NOAH_REF` to upstream commit `a2a31fc` instead of
+`main`. On 2026-07-15 NOAA-OWP/noah-owp-modular replaced its Makefile build
+system with CMake (commit `eb4d16e`), which breaks the `make clean && make
+testBMI` + `libsurfacebmi.so` workflow this repo relies on below. Pinning
+keeps the build working until this repo is migrated to the new CMake build.
+
+**TODO:** migrate this repo (Dockerfile, QUICKSTART.md, README.md, and the
+`.pyx` wrapper which links against `libsurfacebmi.so`) to build Noah-OWP with
+CMake, then move `NOAH_REF` back to `main`.
+
+---
+
 ## Prerequisites
 
 - Docker installed and running
@@ -64,15 +78,19 @@ docker run --rm -it \
 
 ## 3) Build the Noah-OWP model (inside container)
 
-Configure `user_build_options` and build with `-fPIC` (required for shared library):
+Configure `user_build_options` with gfortran + conda-forge settings and build with `-fPIC`:
 
 ```bash
 cd /workspace/noah-owp-modular
-cp config/user_build_options.gfortran.linux user_build_options
-sed -i 's#^ COMPILERF90.*# COMPILERF90    =       gfortran#' user_build_options
-sed -i 's#^ NETCDFMOD.*# NETCDFMOD      =       -I/opt/conda/include#' user_build_options
-sed -i 's#^ NETCDFLIB.*# NETCDFLIB      =       -L/opt/conda/lib -lnetcdf -lnetcdff#' user_build_options
-sed -i 's#^ F90FLAGS.*# F90FLAGS       =       -g -fbacktrace -fPIC#' user_build_options
+
+# Create user_build_options with required settings
+cat > user_build_options << 'EOF'
+ COMPILERF90    =       gfortran
+ NETCDFMOD      =       -I/opt/conda/include
+ NETCDFLIB      =       -L/opt/conda/lib -lnetcdf -lnetcdff
+ F90FLAGS       =       -g -fbacktrace -fPIC
+EOF
+
 make clean && make testBMI
 ```
 
@@ -100,6 +118,7 @@ This:
 3. Builds sdist and wheel with `uv`
 
 Artifacts are created in:
+
 ```text
 /workspace/user/pymt_noah_owp/dist/
 ```

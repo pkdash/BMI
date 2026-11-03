@@ -1,0 +1,39 @@
+# Babelizer scaffold configuration for NOAA-OWP Sac-SMA.
+# The generated Fortran interoperability file is patched afterward because
+# the shared-library name (sacbmi) differs from the native Fortran module/type.
+
+[library.SAC_SMA]
+language = "fortran"
+library = "sacbmi"
+header = ""
+entry_point = "register_bmi"
+
+[build]
+undef_macros = []
+define_macros = []
+libraries = []
+library_dirs = [
+    "/workspace/sac-sma/cmake_build"
+]
+include_dirs = [
+    "/workspace/sac-sma/cmake_build",
+    "/workspace/sac-sma/cmake_build/mod",
+    "/workspace/sac-sma/src/bmi",
+    "/workspace/iso_c_fortran_bmi"
+]
+extra_compile_args = []
+
+[package]
+name = "pymt_sac_sma"
+requirements = []
+
+[info]
+github_username = "vaishaliswaminathan"
+package_author = "Vaishali Swaminathan"
+package_author_email = "vaishaliswaminathan@tamu.edu"
+package_license = "Apache Software License 2.0"
+summary = "Python BMI wrapper for NOAA-OWP Sac-SMA"
+
+[ci]
+python_version = ["3.11"]
+os = ["linux"]

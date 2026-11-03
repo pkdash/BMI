@@ -1,0 +1,4 @@
+name: pymt_lasam
+language: c++
+package: pymt_lasam
+class: LASAM

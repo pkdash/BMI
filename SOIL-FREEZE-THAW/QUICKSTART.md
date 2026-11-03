@@ -1,45 +1,41 @@
-# QUICKSTART
+# QUICKSTART - SFT Python BMI Wrapper
 
 Minimal copy-paste workflow for building and installing the SFT Python BMI wrapper.
 
-## 1) Build image
+## 1. Build the Docker image
 
 ```bash
 docker build --pull --no-cache -t sft-babelizer .
 ```
 
-## 2) Run container (mount current folder)
+## 2. Run container (mount current folder)
+
+Linux/macOS:
 
 ```bash
-# Linux/MacOS
 docker run --rm -it \
   -v "$(pwd)":/workspace/user \
   -w /workspace/user \
   sft-babelizer
 ```
 
+Windows (PowerShell):
+
 ```powershell
-# Windows (PowerShell)
 docker run --rm -it `
   -v "${PWD}:/workspace/user" `
   -w /workspace/user `
   sft-babelizer
 ```
 
-```cmd
-:: Windows (Command Prompt)
-docker run --rm -it ^
-  -v "%cd%:/workspace/user" ^
-  -w /workspace/user ^
-  sft-babelizer
-```
-
-## 3) Generate wrapper + patch + build
+## 3. Generate wrapper + patch + build
 
 Inside the container:
 
 ```bash
-chmod +x regen_and_build.sh post_babelize_patch.sh
+cd /workspace/user
+sed -i 's/\r//' *.sh
+chmod +x *.sh
 ./regen_and_build.sh
 ```
 
@@ -55,15 +51,19 @@ Artifacts end up in:
 pymt_sft/dist/
 ```
 
-## 4) Test in container
+## 4. Test inside the container
 
 ```bash
 cd /workspace/user/pymt_sft
+# ngen currently requires numpy<2 (NOAA-OWP/ngen CMakeLists.txt), so this wrapper is
+# built against numpy<2. --no-build-isolation ignores the pin in pyproject.toml, so make
+# sure the environment has it first:  python -m pip install "numpy<2"
 python -m pip install -e . --no-build-isolation
 python -c "from pymt_sft import SFT; print('pymt_sft import OK')"
+python -c "from pymt_sft import SFT; m=SFT(); print(m.get_component_name())"
 ```
 
-## 5) Install from tar.gz (target env)
+## 5. Install from the source distribution (tar.gz) in another environment (e.g. JupyterHub)
 
 ```bash
 chmod +x install.sh
@@ -78,6 +78,34 @@ export SFT_LIB_DIR=/path/to/SoilFreezeThaw/build   # dir containing libsftbmi.so
 export LD_LIBRARY_PATH="$SFT_LIB_DIR:$LD_LIBRARY_PATH"
 
 pip install /path/to/pymt_sft-0.1.tar.gz
+```
+
+Test the installation (no model config needed):
+
+```bash
+python - <<'PY'
+from pymt_sft import SFT
+m = SFT()
+print(m.get_component_name())
+print("inputs :", m.get_input_var_names())
+print("outputs:", m.get_output_var_names())
+print("pymt_sft import OK")
+PY
+```
+
+Optional Test: Run a short simulation with your own SFT BMI config file:
+
+```bash
+python - <<'PY'
+from pymt_sft import SFT
+m = SFT()
+m.initialize("/path/to/sft_config.txt")   # SFT BMI config file
+print("start/end/step:", m.get_start_time(), m.get_end_time(), m.get_time_step())
+m.update()
+print("time after one step:", m.get_current_time())
+m.finalize()
+print("SFT run OK")
+PY
 ```
 
 ## Notes
@@ -97,12 +125,50 @@ pip install /path/to/pymt_sft-0.1.tar.gz
 - If the import fails with `libsftbmi.so not found`, set `LD_LIBRARY_PATH` to
   the SFT build directory.
 
+## 7. Install for a local NextGen setup
+
+### 7.1 Expected directory structure
+
+```text
+~/NextGenVS/ngen/extern/
+└── soil-freeze-thaw/
+    ├── CMakeLists.txt
+    ├── src/bmi/bmi_soil_freeze_thaw.hxx
+    └── cmake_build/
+        └── libsftbmi.so
+```
+
+### 7.2 Build the backend
+
+```bash
+cd "$HOME/NextGenVS/ngen/extern"
+git clone https://github.com/NOAA-OWP/soil-freeze-thaw.git
+
+cmake \
+  -S soil-freeze-thaw \
+  -B soil-freeze-thaw/cmake_build \
+  -DNGEN=ON \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build soil-freeze-thaw/cmake_build --target sftbmi -j"$(nproc)"
+```
+
+### 7.3 Set environment and install
+
+```bash
+export SFT_ROOT="$HOME/NextGenVS/ngen/extern/soil-freeze-thaw"
+export SFT_LIB_DIR="$SFT_ROOT/cmake_build"
+export LD_LIBRARY_PATH="$SFT_LIB_DIR:${LD_LIBRARY_PATH:-}"
+```
+
+Then run `install.sh` beside the generated tarball.
+
 ## Windows: CRLF line-ending fix
 
 The shell scripts (`*.sh`) must have Unix LF line endings or bash inside the
 Linux container will fail with errors like:
 
-```
+```text
 $'\r': command not found
 ```
 

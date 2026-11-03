@@ -1,0 +1,4 @@
+name: pymt_smp
+language: c++
+package: pymt_smp
+class: SMP

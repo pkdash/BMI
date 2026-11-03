@@ -91,28 +91,12 @@ def _discover_sft_paths():
 
 include_dirs, library_dirs = _discover_sft_paths()
 
-# ── Runtime-library path (rpath) ─────────────────────────────────────────────
-# Embed the path to libsftbmi.so directly in the extension .so so that it is
-# found at import time even before LD_LIBRARY_PATH is exported.  SFT_RPATH is
-# set by install.sh; fall back to SFT_LIB_DIR if it is not present.
-_sft_rpath = os.environ.get("SFT_RPATH") or os.environ.get("SFT_LIB_DIR", "")
-
-extra_link_args: list[str] = []
-if not sys.platform.startswith("win"):
-    if _sft_rpath:
-        extra_link_args.append(f"-Wl,-rpath,{_sft_rpath}")
-    if sys.platform.startswith("linux"):
-        # Fail at *build* time (not silently at import time) if any symbol
-        # from libsftbmi.so is missing — catches hidden-vtable builds early.
-        extra_link_args.append("-Wl,-z,defs")
-
 common_flags = {
     "include_dirs": [np.get_include(), *include_dirs],
     "library_dirs": library_dirs,
     "define_macros": [("BMI_ACTIVE", None)],  # matches SFT CMakeLists
     "undef_macros": [],
     "extra_compile_args": ["-std=c++14"],
-    "extra_link_args": extra_link_args,
     "language": "c++",
 }
 
@@ -170,10 +154,10 @@ setup(
     name="pymt_sft",
     author="Pabitra Dash",
     author_email="pkdash_reena@hotmail.com",
-    description="PyMT plugin for pymt_sft",
+    description="PyMT plugin for NOAA-OWP SoilFreezeThaw",
     long_description=long_description,
     version="0.1",
-    url="https://github.com/pkdash/BMI",
+    url="https://github.com/NOAA-OWP/SoilFreezeThaw",
     project_urls={
         "Source": "https://github.com/pkdash/BMI/tree/main/SOIL-FREEZE-THAW/pymt_sft",
     },

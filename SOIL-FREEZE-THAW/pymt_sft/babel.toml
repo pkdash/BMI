@@ -4,7 +4,6 @@ library = "sftbmi"
 header = "bmi_soil_freeze_thaw.hxx"
 entry_point = "BmiSoilFreezeThaw"
 
-
 [build]
 undef_macros = []
 define_macros = []

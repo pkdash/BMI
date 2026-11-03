@@ -1,0 +1,35 @@
+[library.SMP]
+language = "c++"
+library = "smpbmi"
+header = "bmi_soil_moisture_profile.hxx"
+entry_point = "BmiSoilMoistureProfile"
+
+[build]
+undef_macros = []
+define_macros = []
+libraries = []
+library_dirs = [
+    "/workspace/smp/build"
+]
+include_dirs = [
+    "/workspace/smp/include",
+    "/workspace/smp/bmi",
+    "/workspace/smp/src"
+]
+extra_compile_args = []
+
+[package]
+name = "pymt_smp"
+requirements = []
+
+[info]
+github_username = "vaishswami"
+package_author = "Vaishali Swaminathan"
+package_author_email = ""
+package_license = "MIT License"
+summary = "Python BMI wrapper for NOAA-OWP Soil Moisture Profiles"
+
+[ci]
+python_version = ["3.11"]
+os = ["linux"]
+

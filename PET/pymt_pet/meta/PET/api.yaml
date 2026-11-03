@@ -1,0 +1,4 @@
+name: pymt_pet
+language: c
+package: pymt_pet
+class: PET
