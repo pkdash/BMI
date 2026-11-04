@@ -42,7 +42,15 @@ def _find_fortran_compiler():
     raise RuntimeError("No Fortran compiler found. Set FC or install gfortran.")
 
 include_dirs, library_dirs = _discover_snow17_paths()
-common_flags={"include_dirs":[np.get_include(), *include_dirs], "library_dirs":library_dirs, "define_macros":[], "undef_macros":[], "extra_compile_args":[], "language":"c"}
+# Embed the native library's directory as an RPATH so `import pymt_snow17` can
+# locate libsnow17bmi.so at runtime without LD_LIBRARY_PATH (library_dirs above
+# only affects link time). Not supported by MSVC.
+runtime_library_dirs=[]
+if not sys.platform.startswith("win"):
+    for d in [os.environ.get("SNOW17_RPATH",""), os.environ.get("SNOW17_LIB_DIR","")]:
+        if d and Path(d).exists() and d not in runtime_library_dirs:
+            runtime_library_dirs.append(d)
+common_flags={"include_dirs":[np.get_include(), *include_dirs], "library_dirs":library_dirs, "runtime_library_dirs":runtime_library_dirs, "define_macros":[], "undef_macros":[], "extra_compile_args":[], "language":"c"}
 ext_modules=[Extension("pymt_snow17.lib.snow17", ["pymt_snow17/lib/snow17.pyx"], libraries=["snow17bmi"], extra_objects=["pymt_snow17/lib/bmi_interoperability.o"], **common_flags)]
 entry_points={"pymt.plugins":["SNOW17=pymt_snow17.bmi:SNOW17"]}
 

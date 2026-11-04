@@ -159,6 +159,15 @@ def find_fortran_compiler():
 
 include_dirs, library_dirs = discover_paths()
 
+# Embed the native library's directory as an RPATH so `import pymt_sac_sma` can
+# locate libsacbmi.so at runtime without LD_LIBRARY_PATH (library_dirs above
+# only affects link time). Not supported by MSVC.
+runtime_library_dirs = []
+if not sys.platform.startswith("win"):
+    for d in [os.environ.get("SAC_SMA_RPATH", ""), os.environ.get("SAC_SMA_LIB_DIR", "")]:
+        if d and Path(d).exists() and d not in runtime_library_dirs:
+            runtime_library_dirs.append(d)
+
 pyx_source = Path("pymt_sac_sma/lib/sac_sma.pyx")
 c_source = Path("pymt_sac_sma/lib/sac_sma.c")
 if cythonize is not None and pyx_source.exists():
@@ -175,6 +184,7 @@ extension = Extension(
     sources=[extension_source],
     include_dirs=[np.get_include(), *include_dirs],
     library_dirs=library_dirs,
+    runtime_library_dirs=runtime_library_dirs,
     libraries=["sacbmi", "gfortran"],
     extra_objects=[interop_object],
     language="c",
@@ -270,6 +280,38 @@ if '"numpy<2"' not in text:
     text = text.replace("requires = [", comment + "requires = [", 1)
 path.write_text(text)
 PYEOF
+fi
+
+# Sac-SMA's bmi_sac.f90 reports variable types with C-style names (e.g.
+# get_var_type returns "double"), but Babelizer's generated DTYPE_F_TO_PY only
+# maps Fortran declarations (real, real*8, double precision, integer), so
+# get_var_type raises KeyError: 'double'. Add the C-style aliases.
+PYX="${PKG_DIR}/pymt_sac_sma/lib/sac_sma.pyx"
+if [[ -f "${PYX}" ]]; then
+python - "${PYX}" <<'PYEOF'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+anchor = "    'integer': DTYPE_INT,\n}"
+if "'double': DTYPE_DOUBLE" not in text:
+    if anchor not in text:
+        sys.exit(f"ERROR: DTYPE_F_TO_PY anchor not found in {path}")
+    text = text.replace(
+        anchor,
+        "    'integer': DTYPE_INT,\n"
+        "    # Sac-SMA's bmi_sac.f90 reports C-style names (get_var_type returns\n"
+        "    # \"double\"), not Fortran declarations, so accept those spellings too.\n"
+        "    'double': DTYPE_DOUBLE,\n"
+        "    'float': DTYPE_FLOAT,\n"
+        "    'int': DTYPE_INT,\n"
+        "}",
+        1,
+    )
+    path.write_text(text)
+PYEOF
+echo "- Added C-style type aliases to DTYPE_F_TO_PY in sac_sma.pyx"
 fi
 
 echo

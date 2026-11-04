@@ -20,6 +20,11 @@ DTYPE_F_TO_PY = {
     'double precision': DTYPE_DOUBLE,
     'real*8': DTYPE_DOUBLE,
     'integer': DTYPE_INT,
+    # Sac-SMA's bmi_sac.f90 reports C-style names (get_var_type returns
+    # "double"), not Fortran declarations, so accept those spellings too.
+    'double': DTYPE_DOUBLE,
+    'float': DTYPE_FLOAT,
+    'int': DTYPE_INT,
 }
 for k in list(DTYPE_F_TO_PY.keys()):
     DTYPE_F_TO_PY[k.upper()] = DTYPE_F_TO_PY[k]
