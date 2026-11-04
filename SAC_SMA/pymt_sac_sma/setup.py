@@ -86,6 +86,15 @@ def find_fortran_compiler():
 
 include_dirs, library_dirs = discover_paths()
 
+# Embed the native library's directory as an RPATH so `import pymt_sac_sma` can
+# locate libsacbmi.so at runtime without LD_LIBRARY_PATH (library_dirs above
+# only affects link time). Not supported by MSVC.
+runtime_library_dirs = []
+if not sys.platform.startswith("win"):
+    for d in [os.environ.get("SAC_SMA_RPATH", ""), os.environ.get("SAC_SMA_LIB_DIR", "")]:
+        if d and Path(d).exists() and d not in runtime_library_dirs:
+            runtime_library_dirs.append(d)
+
 pyx_source = Path("pymt_sac_sma/lib/sac_sma.pyx")
 c_source = Path("pymt_sac_sma/lib/sac_sma.c")
 if cythonize is not None and pyx_source.exists():
@@ -102,6 +111,7 @@ extension = Extension(
     sources=[extension_source],
     include_dirs=[np.get_include(), *include_dirs],
     library_dirs=library_dirs,
+    runtime_library_dirs=runtime_library_dirs,
     libraries=["sacbmi", "gfortran"],
     extra_objects=[interop_object],
     language="c",
@@ -149,6 +159,9 @@ setup(
     author_email="vaishaliswaminathan@tamu.edu",
     description="PyMT plugin for NOAA-OWP Sac-SMA",
     url="https://github.com/NOAA-OWP/sac-sma",
+    project_urls={
+        "Source": "https://github.com/pkdash/BMI/tree/main/SAC_SMA/pymt_sac_sma",
+    },
     license="Apache-2.0",
     packages=find_packages(),
     include_package_data=True,

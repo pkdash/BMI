@@ -80,9 +80,19 @@ def _find_fortran_compiler():
 
 include_dirs, library_dirs = _discover_noah_paths()
 
+# Embed the native library's directory as an RPATH so `import pymt_noah_owp` can
+# locate libsurfacebmi.so at runtime without LD_LIBRARY_PATH (library_dirs above
+# only affects link time). Not supported by MSVC.
+runtime_library_dirs = []
+if not sys.platform.startswith("win"):
+    for d in [os.environ.get("NOAH_RPATH", ""), os.environ.get("NOAH_LIB_DIR", "")]:
+        if d and Path(d).exists() and d not in runtime_library_dirs:
+            runtime_library_dirs.append(d)
+
 common_flags = {
     "include_dirs": [np.get_include(), *include_dirs],
     "library_dirs": library_dirs,
+    "runtime_library_dirs": runtime_library_dirs,
     "define_macros": [],
     "undef_macros": [],
     "extra_compile_args": [],
