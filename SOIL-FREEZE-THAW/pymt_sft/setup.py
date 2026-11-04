@@ -91,9 +91,19 @@ def _discover_sft_paths():
 
 include_dirs, library_dirs = _discover_sft_paths()
 
+# Embed the native library's directory as an RPATH so `import pymt_sft` can
+# locate libsftbmi.so at runtime without LD_LIBRARY_PATH (library_dirs above
+# only affects link time). Not supported by MSVC (Windows).
+runtime_library_dirs = []
+if not sys.platform.startswith("win"):
+    for d in [os.environ.get("SFT_RPATH", ""), os.environ.get("SFT_LIB_DIR", "")]:
+        if d and Path(d).exists() and d not in runtime_library_dirs:
+            runtime_library_dirs.append(d)
+
 common_flags = {
     "include_dirs": [np.get_include(), *include_dirs],
     "library_dirs": library_dirs,
+    "runtime_library_dirs": runtime_library_dirs,
     "define_macros": [("BMI_ACTIVE", None)],  # matches SFT CMakeLists
     "undef_macros": [],
     "extra_compile_args": ["-std=c++14"],
