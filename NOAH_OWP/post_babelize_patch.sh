@@ -14,6 +14,10 @@ fi
 
 echo "Reapplying patches in: ${PKG_DIR}"
 
+# Install the generated BMI wrapper (.pyx + NumPy helpers) rendered by
+# ../common/render_wrappers.py and vendored in ./wrapper; see ../common/README.md.
+bash "${ROOT_DIR}/wrapper/install.sh" "${PKG_DIR}"
+
 # 0) Fix Babelizer module name mismatch:
 #    Babelizer generates 'use surfacebmi' from library name, but the actual
 #    Noah Fortran module is 'bminoahowp'. Patch the generated interop file.

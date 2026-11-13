@@ -14,6 +14,10 @@ fi
 
 echo "Reapplying patches in: ${PKG_DIR}"
 
+# Install the generated BMI wrapper (.pyx + NumPy helpers) rendered by
+# ../common/render_wrappers.py and vendored in ./wrapper; see ../common/README.md.
+bash "${ROOT_DIR}/wrapper/install.sh" "${PKG_DIR}"
+
 # 1) Replace pkg_resources version lookup with importlib.metadata
 cat > "${PKG_DIR}/pymt_pet/__init__.py" <<'PYEOF'
 #! /usr/bin/env python

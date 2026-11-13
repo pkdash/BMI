@@ -13,3 +13,4 @@ recursive-exclude meta *
 recursive-exclude recipe *
 recursive-include pymt_sft *.cpp
 recursive-exclude pymt_sft *.c
+recursive-include pymt_sft *.pxi

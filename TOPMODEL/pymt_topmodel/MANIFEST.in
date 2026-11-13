@@ -13,3 +13,4 @@ recursive-exclude meta *
 recursive-exclude recipe *
 recursive-include pymt_topmodel *.cpp
 recursive-include pymt_topmodel *.c
+recursive-include pymt_topmodel *.pxi
