@@ -17,6 +17,7 @@ This monorepo is used to:
 BMI/
 ├── README.md                  # Monorepo overview (this file)
 ├── .gitignore
+├── bmi_setup/                  # Python package: safe model handle, parameter catalogs, config codecs (see bmi_setup/README.md)
 ├── common/                     # Shared Cython wrapper templates + NumPy helpers (see common/README.md)
 │   ├── templates/              # c.pyx.in, cxx.pyx.in, fortran.pyx.in
 │   ├── bmi_arrays.py           # dtype/size/contiguity rules for get/set_value
@@ -147,6 +148,19 @@ python common/render_wrappers.py --check  # CI-style check that nothing is stale
 
 Details, design notes and the test instructions are in
 [`common/README.md`](common/README.md).
+
+## Setting up and parameterizing models (`bmi_setup/`)
+
+`bmi_setup` is a small pure-Python package on top of the wrappers:
+
+- `open_model` guarantees `finalize` and handles the working directory;
+- `Model.set` broadcasts scalars to every layer, with length checks;
+- `catalogs/<model>.json` records, for CFE, Noah-OWP, PET and TOPMODEL, each
+  parameter's config key and whether setting it through BMI after `initialize`
+  is proven identical to a config edit;
+- the config codecs edit a model's own config file in place.
+
+See [`bmi_setup/README.md`](bmi_setup/README.md).
 
 ## Contribution / Workflow
 

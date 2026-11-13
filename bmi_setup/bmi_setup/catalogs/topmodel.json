@@ -1,0 +1,82 @@
+{
+  "model": "topmodel",
+  "codec": "TopmodelConfig",
+  "library": "NOAA-OWP/topmodel src/bmi_topmodel.c",
+  "requires": "a library with the Get_var_nbytes parameter fix (branch fix-param-nbytes); without it, stand-alone configs report nstep elements per parameter and the catalog check fails",
+  "note": "config_key is the params.dat column. xk0 has no effect in current TOPMODEL: expinf() takes the rainfall rate as int, which truncates it to 0.",
+  "parameters": {
+    "chv": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "chv",
+      "set_value": "equivalent"
+    },
+    "rv": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "rv",
+      "set_value": "equivalent"
+    },
+    "sr0": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "sr0",
+      "set_value": "equivalent"
+    },
+    "srmax": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "srmax",
+      "set_value": "equivalent"
+    },
+    "szm": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "szm",
+      "set_value": "equivalent"
+    },
+    "t0": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "t0",
+      "set_value": "equivalent"
+    },
+    "td": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "td",
+      "set_value": "equivalent"
+    },
+    "xk0": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "xk0",
+      "set_value": "unexercised",
+      "note": "used only with infex=1; see the expinf note in the catalog header"
+    },
+    "Q0": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "Q0",
+      "set_value": "none"
+    },
+    "infex": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "infex",
+      "set_value": "none"
+    },
+    "hf": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "hf",
+      "set_value": "none"
+    },
+    "dth": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "dth",
+      "set_value": "none"
+    }
+  }
+}

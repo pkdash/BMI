@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bmi-setup"
+version = "0.4.0"
+description = "Set up and parameterize BMI models through their pymt_* Python wrappers"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+# numpy<2 for the same reason as the wrappers: ngen rejects numpy>=2.
+dependencies = ["numpy<2"]
+
+[project.optional-dependencies]
+# The pymt_* wrappers are built against local native libraries (see each
+# model's QUICKSTART.md), so they are not listed as installable extras.
+test = ["pytest"]
+
+[tool.setuptools]
+packages = ["bmi_setup"]
+
+[tool.setuptools.package-data]
+bmi_setup = ["catalogs/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Put the package root first on sys.path. Run from the repo root, the cwd is
+# on sys.path too, and the outer bmi_setup/ directory (no __init__.py) would
+# otherwise be imported as a namespace package that hides the real one.
+pythonpath = [".", "tests"]
+markers = [
+    "wrappers: needs the pymt_* wrappers and their native libraries (configured through PYMT_<KEY>_CONFIG)",
+]
