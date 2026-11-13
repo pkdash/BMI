@@ -183,18 +183,30 @@ class NamelistConfig:
 
     Keys may be given bare (``"isltyp"``) when the name occurs in only one
     group, or qualified (``"structure.isltyp"``). Names are case-insensitive,
-    as in Fortran. Only ``name = value`` lines that sit inside a group
-    (``&group`` ... ``/``) are recognized; a value ends at a ``!`` comment that
-    is outside quotes. Strings are written double-quoted, and lists
-    comma-separated.
+    as in Fortran. Only ``name = value`` assignments inside a group
+    (``&group`` ... ``/``) are recognized. Outside quotes, a value ends at a
+    ``!`` comment, at the group terminator ``/``, or where the next
+    ``name =`` on the same line starts; a value may continue on the following
+    lines (``a = 1, 2,`` then ``3, 4``). ``set`` writes the whole new value on
+    the first line and removes the continuation values. Strings are written
+    double-quoted, and lists comma-separated.
+
+    Array-element assignments (``a(2) = ...``) are recognized so that they are
+    never mistaken for part of another value, and they are kept as written.
+    They cannot be read or set: ``get``/``set`` of a name that also has element
+    assignments raise ``KeyError``, because Fortran would apply the element
+    assignment over whatever whole value is written.
 
     This codec covers the namelist only. Noah's parameter tables
     (``SOILPARM.TBL`` etc.) are a different format and are out of scope.
     """
 
-    _GROUP = re.compile(r"^\s*&(?P<name>\w+)")
-    _END = re.compile(r"^\s*/")
-    _ENTRY = re.compile(r"^(?P<lead>\s*)(?P<key>[A-Za-z]\w*)(?P<eq>\s*=\s*)")
+    _GROUP = re.compile(r"\s*&(?P<name>\w+)")
+    # A whole-variable assignment, an array-element one (key "a(2)"), and the start
+    # of either: what ends the previous value on the same line.
+    _ASSIGN = re.compile(r"[\s,]*(?P<key>[A-Za-z]\w*)\s*=\s*")
+    _ELEMENT = re.compile(r"[\s,]*(?P<key>[A-Za-z]\w*\s*\([^()=]*\))\s*=\s*")
+    _NEXT = re.compile(r"[\s,]*[A-Za-z]\w*\s*(?:\([^()=]*\)\s*)?=")
 
     def __init__(self, text: str, path: Optional[PathLike] = None):
         self.path = Path(path) if path is not None else None
@@ -204,52 +216,103 @@ class NamelistConfig:
     def read(cls, path: PathLike) -> "NamelistConfig":
         return cls(_read_text(path), path)
 
-    @staticmethod
-    def _split_comment(rest: str) -> Tuple[str, str]:
-        """(value incl. trailing spaces, comment) for the text after ``=``."""
+    @classmethod
+    def _scan(cls, body: str, pos: int) -> Tuple[int, str]:
+        """End of the value that starts at ``pos``, and what ends it.
+
+        The second item is ``"!"`` (comment), ``"/"`` (group end), ``"="``
+        (another ``name =`` follows on the line) or ``""`` (end of line).
+        Characters inside quotes never end a value.
+        """
         quote = None
-        for i, ch in enumerate(rest):
+        for i in range(pos, len(body)):
+            ch = body[i]
             if quote:
                 if ch == quote:
                     quote = None
             elif ch in "\"'":
                 quote = ch
-            elif ch == "!":
-                return rest[:i], rest[i:]
-        return rest, ""
+            elif ch in "!/":
+                return i, ch
+            elif ch in ", \t" and cls._NEXT.match(body, i):
+                return i, "="
+        return len(body), ""
 
-    def _entries(self):
-        """Yield (line index, group, key, match) for every ``key = value`` line."""
-        group = None
+    def _entries(self) -> List[Tuple[str, str, List[Tuple[int, int, int]]]]:
+        """``(group, key, spans)`` for every assignment, in file order.
+
+        ``spans`` holds one ``(line index, start, end)`` per line the value is
+        written on: the first line, then any continuation lines. An
+        array-element assignment has a key such as ``"zsoil(2)"``.
+        """
+        entries: List[Tuple[str, str, List[Tuple[int, int, int]]]] = []
+        group: Optional[str] = None
+        current = None                  # the entry a continuation line extends
         for i, line in enumerate(self._lines):
             body = line.rstrip("\r\n")
-            g = self._GROUP.match(body)
-            if g:
-                group = g.group("name").lower()
-                continue
-            if group is not None and self._END.match(body):
-                group = None
-                continue
+            pos = 0
             if group is None:
-                continue
-            m = self._ENTRY.match(body)
-            if m:
-                yield i, group, m.group("key").lower(), m
+                g = self._GROUP.match(body)
+                if not g:
+                    continue
+                group, current, pos = g.group("name").lower(), None, g.end()
+            while group is not None:
+                m = self._ASSIGN.match(body, pos) or self._ELEMENT.match(body, pos)
+                if m:
+                    key = re.sub(r"\s+", "", m.group("key").lower())
+                    current = (group, key, [])
+                    entries.append(current)
+                    start = m.end()
+                else:
+                    rest = body[pos:].lstrip()
+                    if not rest or rest.startswith("!"):
+                        break
+                    if rest.startswith("&"):
+                        g = self._GROUP.match(body, pos)
+                        if g and g.group("name").lower() != "end":
+                            group, current, pos = g.group("name").lower(), None, g.end()
+                            continue
+                    if rest.startswith(("/", "&")):
+                        group = current = None      # "/", or an old-style "&end"
+                        break
+                    if current is None:
+                        break                       # stray text: not a value we know
+                    start = len(body) - len(rest)
+                end, stop = self._scan(body, start)
+                current[2].append((i, start, end))
+                if stop == "/":
+                    group = current = None
+                elif stop == "=":
+                    pos = end
+                    continue
+                break
+        return entries
 
     def keys(self) -> List[str]:
-        return [f"{g}.{k}" for _, g, k, _ in self._entries()]
+        """Keys ``get``/``set`` accept: not array elements, nor names that also have them."""
+        entries = self._entries()
+        element_of = {(g, k.split("(")[0]) for g, k, _ in entries if "(" in k}
+        return [f"{g}.{k}" for g, k, _ in entries if "(" not in k and (g, k) not in element_of]
 
-    def _find(self, key: str):
+    def _find(self, key: str) -> List[Tuple[int, int, int]]:
         key = key.lower()
         group, _, name = key.rpartition(".")
-        hits = [(i, g, k, m) for i, g, k, m in self._entries()
+        if "(" in name:
+            raise KeyError(f"{key!r}: array-element assignments cannot be read or set")
+        entries = self._entries()
+        hits = [(g, spans) for g, k, spans in entries
                 if k == name and (not group or g == group)]
         if not hits:
             raise KeyError(key)
-        if len({g for _, g, _, _ in hits}) > 1:
-            groups = sorted({g for _, g, _, _ in hits})
+        if len({g for g, _ in hits}) > 1:
+            groups = sorted({g for g, _ in hits})
             raise KeyError(f"{key!r} is in several groups {groups}; qualify it as 'group.{name}'")
-        return hits[-1]
+        found_group = hits[-1][0]
+        elements = [k for g, k, _ in entries if g == found_group and k.startswith(name + "(")]
+        if elements:
+            raise KeyError(f"{key!r} is also assigned element by element ({', '.join(elements)}); "
+                           f"that is not supported")
+        return hits[-1][1]
 
     def __contains__(self, key: str) -> bool:
         try:
@@ -259,10 +322,10 @@ class NamelistConfig:
             return False
 
     def get(self, key: str) -> str:
-        i, _, _, m = self._find(key)
-        body = self._lines[i].rstrip("\r\n")
-        value, _ = self._split_comment(body[m.end():])
-        return value.strip()
+        """The value as written; a value on several lines is joined with spaces."""
+        parts = [self._lines[i].rstrip("\r\n")[start:end].strip()
+                 for i, start, end in self._find(key)]
+        return " ".join(p for p in parts if p)
 
     @staticmethod
     def format_value(value) -> str:
@@ -277,17 +340,32 @@ class NamelistConfig:
         return format_number(value)
 
     def set(self, key: str, value) -> None:
-        """Replace ``key``'s value in place, keeping the alignment of any comment."""
-        i, _, _, m = self._find(key)
+        """Replace ``key``'s value in place.
+
+        Whatever follows the value on its line (a comment, the group's ``/``,
+        another assignment) is kept, and a comment or ``/`` stays in its column
+        when the new value fits. Continuation lines of the old value are
+        removed, keeping anything else written on them.
+        """
+        new = self.format_value(value)
+        (i, start, end), *more = self._find(key)
+        for j, s, e in reversed(more):
+            line = self._lines[j]
+            body = line.rstrip("\r\n")
+            left = body[:s] + body[e:]
+            if left.strip():
+                self._lines[j] = left + line[len(body):]
+            else:
+                del self._lines[j]
         line = self._lines[i]
         body = line.rstrip("\r\n")
-        ending = line[len(body):]
-        old, comment = self._split_comment(body[m.end():])
-        new = self.format_value(value)
-        pad = len(old) - len(new)
-        # Keep a comment in its column when the new value fits; otherwise one space.
-        gap = " " * pad if pad >= 1 else (" " if comment else "")
-        self._lines[i] = body[:m.end()] + new + (gap if comment else "") + comment + ending
+        old, tail = body[start:end], body[end:]
+        if tail[:1] in ("!", "/"):
+            pad = len(old) - len(new)
+            gap = " " * pad if pad >= 1 else " "
+        else:                           # end of line, or whitespace/comma before the next name
+            gap = ""
+        self._lines[i] = body[:start] + new + gap + tail + line[len(body):]
 
     def to_text(self) -> str:
         return "".join(self._lines)
@@ -317,7 +395,8 @@ class TopmodelConfig:
     5. output file, 6. hydrograph output file
 
     The paths are relative to the working directory at ``initialize``, so
-    ``read`` needs that directory to find ``params.dat``.
+    ``read`` needs that directory to find ``params.dat`` (by default the
+    directory containing the ``.run`` file).
 
     ``params.dat`` is a title line, then one line of 12 numbers in the fixed
     order of :attr:`PARAMS`. Keys are those column names; ``stand_alone`` and the
@@ -342,13 +421,16 @@ class TopmodelConfig:
     def read(cls, run_path: PathLike, workdir: Optional[PathLike] = None) -> "TopmodelConfig":
         """Read ``run_path`` and the params file it names, resolved from ``workdir``.
 
-        ``workdir`` defaults to the current directory, which is what TOPMODEL
-        itself uses at ``initialize``.
+        TOPMODEL resolves these paths from the current directory at
+        ``initialize``. ``workdir`` defaults to the directory containing
+        ``run_path``, the same default :meth:`bmi_setup.Model.initialize` uses.
         """
         run_text = _read_text(run_path)
-        workdir = Path(workdir) if workdir is not None else Path.cwd()
-        params_rel = run_text.splitlines()[4].strip()
-        return cls(run_text, _read_text(workdir / params_rel), run_path, workdir)
+        workdir = Path(workdir) if workdir is not None else Path(run_path).resolve().parent
+        lines = run_text.splitlines()
+        if len(lines) < 7:
+            raise ValueError(f"a TOPMODEL .run file has at least 7 lines, got {len(lines)}")
+        return cls(run_text, _read_text(workdir / lines[4].strip()), run_path, workdir)
 
     # ---- .run items
     def _run_item(self, index: int) -> str:
@@ -463,7 +545,10 @@ class TopmodelConfig:
 
 
 def open_config(codec: str, path: PathLike, workdir: Optional[PathLike] = None):
-    """Read ``path`` with the codec named ``codec`` (a class name in this module)."""
+    """Read ``path`` with the codec named ``codec`` (a class name in this module).
+
+    ``workdir`` is used by ``TopmodelConfig`` only (default: ``path``'s directory).
+    """
     cls = {"KeyValueConfig": KeyValueConfig, "NamelistConfig": NamelistConfig,
            "TopmodelConfig": TopmodelConfig}[codec]
     if cls is TopmodelConfig:

@@ -53,13 +53,18 @@ metadata. `Model` also accepts a wrapper class instead of a key.
   error), and also when a `Model` is garbage-collected while still initialized.
   The Fortran wrappers hold model handles in a fixed table of 2048 slots that
   only `finalize` frees. Without the safety net, the 2049th dropped instance
-  makes every later `initialize` fail. C wrappers otherwise free the model
-  struct without finalizing.
+  makes every later instance fail. C wrappers otherwise free the model
+  struct without finalizing. `Model` creates the wrapper only when it is first
+  needed, so a `Model` that is never initialized (or whose config file is
+  missing) takes no slot. A native `initialize` that fails keeps its slot,
+  because finalizing an uninitialized Fortran model is unsafe.
 - **Working directory.** `initialize` runs with the current directory set to
-  `workdir`, which defaults to the config file's directory. The previous
-  directory is then restored. Models resolve relative paths in their config at
-  `initialize`. `chdir` is process-wide, so don't initialize models from several
-  threads at once; use processes for parallel runs.
+  `workdir`, and the previous directory is then restored. With `workdir` given,
+  a relative config path is relative to it. Without it, a relative config path
+  is relative to the current directory, `workdir` is the config's directory,
+  and the model gets the absolute config path. Models resolve relative paths
+  in their config at `initialize`. `chdir` is process-wide, so don't initialize
+  models from several threads at once; use processes for parallel runs.
 - **Native chatter** printed during `initialize`/`finalize` goes to stderr.
 - **`set`**:
   - A scalar is broadcast to the variable's length.
@@ -72,10 +77,11 @@ metadata. `Model` also accepts a wrapper class instead of a key.
   `CatalogMismatch` (after finalizing) if any differ. Pass
   `check_catalog=False` to skip it.
 
-Native quirk, unchanged: CFE's `get_value` copies only element 0 of
-multi-element variables (`common/README.md`). Use `m.bmi.get_value_ptr` for
-those. All catalog parameters are scalars or Noah layers, and Noah's `get_value`
-is complete.
+CFE's native `get_value` copies only element 0 of multi-element variables
+(`common/README.md`). `Model.get` therefore copies multi-element variables
+from `get_value_ptr` when the wrapper supports it, and falls back to
+`get_value` otherwise (Noah-OWP's pointer always fails, but its `get_value` is
+complete).
 
 ## Parameter catalogs (`bmi_setup/catalogs/*.json`)
 
@@ -98,7 +104,7 @@ compares with putting the same value in the config. This is what ngen's
 | Value | Meaning |
 |---|---|
 | `equivalent` | every output at every step bit-identical over a 720-step test run |
-| `unexercised` | changing it in the config changed nothing in the test run, so equivalence is unproven |
+| `unexercised` | changing it in the config changed nothing in the test run (and neither did setting it through BMI), so equivalence is unproven |
 | `untested` | BMI-settable but not compared yet |
 | `differs` | outputs differ: change it in the config instead |
 | `none` | no BMI variable; change it in the config |

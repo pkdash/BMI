@@ -38,10 +38,11 @@ def configured(key: str) -> Optional[tuple]:
     config = os.environ.get(f"PYMT_{ENV_KEY[key]}_CONFIG")
     if not config:
         return None
+    # Same resolution as common/tests/test_native_models.py: the config is
+    # relative to the current directory, and WORKDIR defaults to its directory.
+    config = Path(config).resolve()
     workdir = os.environ.get(f"PYMT_{ENV_KEY[key]}_WORKDIR")
-    config = Path(config)
-    workdir = Path(workdir) if workdir else config.resolve().parent
-    return (workdir / config).resolve(), workdir.resolve()
+    return config, Path(workdir or config.parent).resolve()
 
 
 def forcing_csv() -> Optional[Path]:

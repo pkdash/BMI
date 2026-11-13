@@ -26,8 +26,10 @@ What it does:
 
 BMI entries are drafted as ``"set_value": "untested"``. Run
 ``tools/check_equivalence.py`` to classify them. With ``--merge`` the packaged
-catalog's reviewed fields (``config_key``, ``set_value``, ``source``, ``note``)
-are kept, and differences in dtype/length/units are reported on stderr.
+catalog's reviewed fields (``config_key``, ``set_value``, ``source``, and a
+config-dependent ``length``) are kept, old and new notes are both kept, and
+differences in dtype/length/units are reported on stderr. A numeric ``length``
+and the dtype and units are taken from the library.
 """
 
 from __future__ import annotations
@@ -56,7 +58,7 @@ def numeric_config_values(key: str, config: Path, workdir: Path):
     spec = get_spec(key)
     if not spec.codec:
         return {}
-    cfg = open_config(spec.codec, workdir / config, workdir)
+    cfg = open_config(spec.codec, config, workdir)
     out = {}
     for k in cfg.keys():
         m = _NUMBER.match(cfg.get(k).replace("d", "e").replace("D", "E"))
@@ -135,8 +137,15 @@ def merge(key: str, drafted: dict):
                     field == "length" and isinstance(entry[field], str)):
                 print(f"! {name}: {field} changed {entry[field]!r} -> {new.get(field)!r}",
                       file=sys.stderr)
-        merged[name] = {**new, **{k: entry[k] for k in ("length", "config_key", "set_value",
-                                                        "source", "note") if k in entry}}
+        # A numeric length comes from the library, so the probe's wins; a
+        # config-dependent length (a key name such as "nsoil") is reviewed.
+        kept = ("config_key", "set_value", "source")
+        if isinstance(entry.get("length"), str):
+            kept += ("length",)
+        merged[name] = {**new, **{k: entry[k] for k in kept if k in entry}}
+        notes = [n for n in (entry.get("note"), new.get("note")) if n]
+        if notes:
+            merged[name]["note"] = "; ".join(dict.fromkeys(notes))
     for name, new in drafted.items():
         if name not in merged:
             print(f"+ {name}: new in the library", file=sys.stderr)
@@ -154,8 +163,9 @@ def main(argv=None):
     ap.add_argument("--out", type=Path, help="write the draft here (default: stdout)")
     args = ap.parse_args(argv)
 
-    workdir = (args.workdir or args.config.resolve().parent).resolve()
-    params, leftovers = probe(args.model, args.config, workdir, args.source)
+    config = args.config.resolve()                      # relative to the current directory
+    workdir = (args.workdir or config.parent).resolve()
+    params, leftovers = probe(args.model, config, workdir, args.source)
     if args.merge:
         params = merge(args.model, params)
     draft = {"model": args.model,

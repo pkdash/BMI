@@ -25,6 +25,10 @@ bmi_setup = ["catalogs/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Put the package root first on sys.path. Run from the repo root, the cwd is
+# on sys.path too, and the outer bmi_setup/ directory (no __init__.py) would
+# otherwise be imported as a namespace package that hides the real one.
+pythonpath = [".", "tests"]
 markers = [
     "wrappers: needs the pymt_* wrappers and their native libraries (configured through PYMT_<KEY>_CONFIG)",
 ]

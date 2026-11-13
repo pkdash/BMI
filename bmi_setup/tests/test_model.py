@@ -68,6 +68,71 @@ def test_uninitialized_model_needs_no_finalize():
     assert bmi.finalized == 0
 
 
+def test_wrapper_is_created_only_when_needed(tmp_path, config):
+    created = []
+
+    class Counting(FakeBmi):
+        def __init__(self):
+            super().__init__()
+            created.append(self)
+
+    m = Model(Counting)
+    assert created == [] and m.name == "Counting"
+    with pytest.raises(FileNotFoundError):
+        m.initialize(tmp_path / "missing.cfg")
+    assert created == []                  # a Fortran wrapper would hold no slot
+    m.initialize(config)
+    assert len(created) == 1 and m.bmi is created[0]
+    m.finalize()
+
+
+def test_relative_config_without_workdir_is_relative_to_cwd(tmp_path, monkeypatch):
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "m.cfg").write_text("ok\n")
+    monkeypatch.chdir(tmp_path)
+    LOG.clear()
+    with open_model(FakeBmi, "data/m.cfg") as m:
+        assert m.config == tmp_path.resolve() / "data" / "m.cfg"
+        assert m.workdir == tmp_path.resolve() / "data"
+    assert LOG[0][2] == str(tmp_path.resolve() / "data")
+    assert os.getcwd() == str(tmp_path.resolve())
+
+
+def test_catalog_true_and_bad_catalog_arguments(config):
+    with pytest.raises(TypeError, match="needs a model key"):
+        Model(FakeBmi, catalog=True)
+    with pytest.raises(TypeError, match="must be a Catalog"):
+        Model(FakeBmi, catalog="cfe.json")
+    assert Model(FakeBmi, catalog=False).catalog is None
+
+
+def test_get_reads_every_element_through_pointer(config):
+    class FirstElementOnly(FakeBmi):
+        """Like native CFE: get_value fills only element 0."""
+        def get_value(self, name, dest=None):
+            out = super().get_value(name)
+            out[1:] = np.nan
+            return out
+
+        def get_value_ptr(self, name):
+            return self._vals[name]
+
+    with open_model(FirstElementOnly, config) as m:
+        m.set("layers", [0.1, 0.2, 0.3, 0.4])
+        np.testing.assert_array_equal(m.get("layers"),
+                                      np.array([0.1, 0.2, 0.3, 0.4], dtype=np.float32))
+        v = m.get("layers")
+        v[:] = 9                                  # a copy, not the model's memory
+        assert m.get("layers")[0] == np.float32(0.1)
+
+    class NoPointer(FakeBmi):                     # like Noah-OWP: the pointer always fails
+        def get_value_ptr(self, name):
+            raise NotImplementedError
+
+    with open_model(NoPointer, config) as m:
+        assert m.get("layers").shape == (4,)
+
+
 def test_initialize_runs_in_workdir_and_restores_cwd(config, tmp_path):
     before = os.getcwd()
     LOG.clear()
@@ -228,6 +293,11 @@ def test_check_equivalence_statuses(tmp_path):
     # The edited config holds 2.0, but BMI sets 4.0: the runs differ.
     r = check_equivalence(opener, lambda: open_model(Edited, base), "scalar", 3, value=4.0)
     assert r.status == "differs" and r.difference_output == "q_out"
+
+    # The config edit changes nothing, but setting through BMI does: that is a
+    # difference, not an unexercised parameter.
+    r = check_equivalence(opener, opener, "scalar", 3, value=4.0)
+    assert r.effect == 0 and r.status == "differs"
 
 
 def test_equivalent_when_bmi_matches_config(tmp_path):

@@ -12,7 +12,8 @@ Three runs of the same model, with identical forcing:
 anything the model derives from the parameter during ``initialize`` must also be
 recomputed by its ``set_value``. ``base`` vs ``config`` shows whether the
 parameter mattered at all in the test window; if it did not, the comparison
-proves nothing and the result is ``unexercised``.
+proves nothing and the result is ``unexercised`` (unless ``config`` and ``bmi``
+differ anyway, which is ``differs``).
 
 Used by the integration tests and by ``tools/check_equivalence.py``.
 """
@@ -117,12 +118,14 @@ def check_equivalence(open_base: Opener, open_config: Opener, name: str, steps: 
         via_bmi = run_steps(m, steps, forcing)
     effect, effect_out, unchanged = compare_runs(base, edited)
     diff, diff_out, identical = compare_runs(edited, via_bmi)
-    if unchanged:
-        status = "unexercised"
-    elif identical:
-        status = "equivalent"
-    else:
+    # A config-vs-BMI difference is reported even when the config edit changed
+    # nothing: BMI then did something the config does not.
+    if not identical:
         status = "differs"
+    elif unchanged:
+        status = "unexercised"
+    else:
+        status = "equivalent"
     return Equivalence(name=name, value=np.atleast_1d(value).astype(float).tolist(),
                        effect=effect, effect_output=effect_out, difference=diff,
                        difference_output=diff_out, status=status)

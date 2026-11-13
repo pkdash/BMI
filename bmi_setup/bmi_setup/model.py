@@ -11,7 +11,11 @@ What this adds over calling the wrapper directly:
   ``weakref.finalize`` safety net finalizes a ``Model`` that is garbage-collected
   while still initialized. The Fortran wrappers keep model handles in a fixed
   table of 2048 slots that only ``finalize`` releases, so instances dropped
-  without it eventually make every new ``initialize`` fail.
+  without it eventually make every new instance fail. ``Model`` creates the
+  wrapper only when it is first needed, so a ``Model`` that is never
+  initialized takes no slot. A failed native ``initialize`` keeps its slot
+  (finalizing an uninitialized Fortran model is unsafe), so do not retry
+  failures in an unbounded loop with new ``Model`` objects.
 * **Working directory.** Models resolve the relative paths in their config at
   ``initialize``. ``initialize`` runs inside a temporary ``chdir`` to
   ``workdir`` and the previous directory is restored afterwards. ``chdir`` is
@@ -130,20 +134,40 @@ class Model:
             self.key: Optional[str] = model
             cls = load_class(model)
             spec = get_spec(model)
-            if catalog is None and spec.catalog:
+            # True insists on the packaged catalog (KeyError if the model has none).
+            if catalog is True or (catalog is None and spec.catalog):
                 catalog = load_catalog(model)
         else:
+            if catalog is True:
+                raise TypeError("catalog=True needs a model key; pass a Catalog for a wrapper class")
             self.key, cls = None, model
-        self.catalog: Optional[Catalog] = catalog or None
-        self.bmi = cls()
+        if catalog is not None and not isinstance(catalog, (Catalog, bool)):
+            raise TypeError(f"catalog must be a Catalog, None or a bool, not {type(catalog).__name__}")
+        self.catalog: Optional[Catalog] = catalog if isinstance(catalog, Catalog) else None
+        self._cls = cls
+        self._bmi = None
         self.config: Optional[Path] = None
         self.workdir: Optional[Path] = None
         self._initialized = False
         self._finalizer: Optional[weakref.finalize] = None
 
     @property
+    def bmi(self):
+        """The wrapper instance, created on first use.
+
+        Creation is delayed because the Fortran wrappers take one of their 2048
+        model slots when the instance is created, and only the model's
+        ``finalize`` gives it back. That ``finalize`` must not run on a model
+        that was never initialized, so a slot taken by a ``Model`` that is never
+        initialized could never be released.
+        """
+        if self._bmi is None:
+            self._bmi = self._cls()
+        return self._bmi
+
+    @property
     def name(self) -> str:
-        return self.key or type(self.bmi).__name__
+        return self.key or self._cls.__name__
 
     def __repr__(self) -> str:
         state = "initialized" if self._initialized else "not initialized"
@@ -158,30 +182,37 @@ class Model:
                    check_catalog: bool = True) -> "Model":
         """Initialize from ``config``, with ``workdir`` as the current directory.
 
-        ``workdir`` defaults to the directory containing ``config``. ``config``
-        is passed to the model as given, so a relative ``config`` is relative to
-        ``workdir``. On success the catalog (if any) is checked against the
-        library; a mismatch finalizes the model and raises
+        With ``workdir`` given, ``config`` is passed to the model as given, so
+        a relative ``config`` is relative to ``workdir``. Without it, a relative
+        ``config`` is relative to the current directory, ``workdir`` becomes the
+        directory containing it, and the model gets the absolute config path.
+        On success the catalog (if any) is checked against the library; a
+        mismatch finalizes the model and raises
         :class:`bmi_setup.catalog.CatalogMismatch`.
+
+        If the native ``initialize`` fails, a Fortran wrapper keeps its model
+        slot (see :attr:`bmi`); retrying ``initialize`` on this ``Model`` reuses it.
         """
         if self._initialized:
             raise RuntimeError(f"{self.name}: already initialized")
-        config_path = Path(config)
         if workdir is None:
-            workdir = config_path.parent if config_path.parent != Path("") else Path.cwd()
-        workdir = Path(workdir).resolve()
-        resolved = config_path if config_path.is_absolute() else workdir / config_path
+            resolved = Path(config).resolve()
+            workdir, config = resolved.parent, resolved
+        else:
+            workdir = Path(workdir).resolve()
+            resolved = Path(config) if Path(config).is_absolute() else workdir / config
         if not resolved.is_file():
             raise FileNotFoundError(f"{self.name}: config file not found: {resolved}")
+        bmi = self.bmi
         with _chdir(workdir), chatter_to_stderr():
             try:
-                self.bmi.initialize(str(config))
+                bmi.initialize(str(config))
             except Exception as err:
                 raise _with_context(err, f"{self.name}: initialize({str(config)!r}) in "
                                          f"{workdir} failed: {err}") from err
         self._initialized = True
         self.config, self.workdir = resolved, workdir
-        self._finalizer = weakref.finalize(self, _finalize_quietly, self.bmi)
+        self._finalizer = weakref.finalize(self, _finalize_quietly, bmi)
         if check_catalog and self.catalog is not None:
             try:
                 self.catalog.check(self)
@@ -252,11 +283,17 @@ class Model:
     def get(self, name: str) -> np.ndarray:
         """A new 1-D array with the current value of ``name``.
 
-        Note that native CFE ``get_value`` copies only element 0 of
-        multi-element variables (documented in ``common/README.md``); use
-        ``m.bmi.get_value_ptr`` for those.
+        A multi-element variable is copied from ``get_value_ptr`` when the
+        wrapper supports it, because native CFE ``get_value`` copies only
+        element 0 (documented in ``common/README.md``). Where the pointer is
+        not available (Noah-OWP, Sac-SMA), ``get_value`` is used.
         """
         self._require_initialized(f"get({name!r})")
+        if hasattr(self.bmi, "get_value_ptr") and self.var_length(name) > 1:
+            try:
+                return np.array(self.bmi.get_value_ptr(name), copy=True).ravel()
+            except Exception:                           # noqa: BLE001 - fall back below
+                pass
         return self._call("get_value", name)
 
     def set(self, name: str, value) -> None:

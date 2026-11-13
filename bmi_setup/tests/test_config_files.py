@@ -195,6 +195,73 @@ def test_namelist_ignores_lines_outside_groups():
     assert nml.keys() == ["a.y"]
 
 
+def test_namelist_terminator_on_value_line_is_kept():
+    nml = NamelistConfig("&a\n  nsoil = 4 /\n&b\n  nsoil = 9\n/\n")
+    assert nml.keys() == ["a.nsoil", "b.nsoil"]
+    nml.set("a.nsoil", 5)
+    assert nml.to_text() == "&a\n  nsoil = 5 /\n&b\n  nsoil = 9\n/\n"
+    nml.set("a.nsoil", 12345)
+    assert nml.to_text().splitlines()[1] == "  nsoil = 12345 /"
+    one_line = NamelistConfig("&a x = 1, y = 2 /\n")
+    assert one_line.keys() == ["a.x", "a.y"] and one_line.get("y") == "2"
+
+
+def test_namelist_several_assignments_on_one_line():
+    nml = NamelistConfig("&a\n  x = 1, y = 'p/q', z = T  ! c\n/\n")
+    assert [nml.get(k) for k in ("x", "y", "z")] == ["1", "'p/q'", "T"]
+    nml.set("x", 10)
+    nml.set("y", "r")
+    assert nml.to_text() == "&a\n  x = 10, y = \"r\", z = T  ! c\n/\n"
+
+
+def test_namelist_multiline_values():
+    text = "&a\n  zsoil = 0.1, 0.3,   ! layers\n          0.6, 1.0\n  nsoil = 4\n/\n"
+    nml = NamelistConfig(text)
+    assert nml.keys() == ["a.zsoil", "a.nsoil"]
+    assert nml.get("zsoil") == "0.1, 0.3, 0.6, 1.0"
+    nml.set("zsoil", [0.2, 0.4, 0.8, 1.6])
+    assert nml.to_text() == ("&a\n  zsoil = 0.2, 0.4, 0.8, 1.6 ! layers\n"
+                             "  nsoil = 4\n/\n")
+    # A continuation line that also ends the group keeps the "/".
+    nml = NamelistConfig("&a\n  v = 1,\n      2 /\n")
+    nml.set("v", [3, 4])
+    assert nml.to_text() == "&a\n  v = 3, 4\n      /\n"
+    assert nml.keys() == ["a.v"]
+
+
+def test_namelist_array_element_line_is_not_a_continuation():
+    text = "&g\n  nsoil = 4   ! layers\n  zsoil(1) = -0.1\n  isltyp = 3\n/\n"
+    nml = NamelistConfig(text)
+    assert nml.keys() == ["g.nsoil", "g.isltyp"]
+    assert nml.get("nsoil") == "4"
+    nml.set("nsoil", 3)
+    assert nml.to_text() == text.replace("nsoil = 4", "nsoil = 3")
+
+
+def test_namelist_array_element_on_the_same_line():
+    nml = NamelistConfig("&g\n  nsoil = 4, zsoil(2) = -0.3, isltyp = 3 /\n")
+    assert nml.keys() == ["g.nsoil", "g.isltyp"]
+    assert nml.get("nsoil") == "4" and nml.get("isltyp") == "3"
+    nml.set("isltyp", 5)
+    assert nml.to_text() == "&g\n  nsoil = 4, zsoil(2) = -0.3, isltyp = 5 /\n"
+
+
+def test_namelist_element_assigned_variable_cannot_be_read_or_set():
+    text = "&g\n  zsoil = 0.1, 0.3\n  zsoil(2) = 0.4,\n     0.6\n  nsoil = 2\n/\n"
+    nml = NamelistConfig(text)
+    assert nml.keys() == ["g.nsoil"]                     # every key listed can be read
+    assert [nml.get(k) for k in nml.keys()] == ["2"]     # 0.6 continues zsoil(2), not zsoil
+    with pytest.raises(KeyError, match="element by element"):
+        nml.get("zsoil")
+    with pytest.raises(KeyError, match="element by element"):
+        nml.set("zsoil", [1, 2])
+    with pytest.raises(KeyError, match="array-element"):
+        nml.get("zsoil(2)")
+    assert "zsoil" not in nml
+    nml.set("nsoil", 3)
+    assert nml.to_text() == text.replace("nsoil = 2", "nsoil = 3")
+
+
 # ----------------------------------------------------------------- TopmodelConfig
 @pytest.fixture
 def topmodel_dir(tmp_path):
@@ -238,11 +305,22 @@ def test_topmodel_unknown_column_and_bad_value():
         cfg.set("szm", "1 2")
 
 
-def test_topmodel_requires_full_files():
+def test_topmodel_requires_full_files(tmp_path):
     with pytest.raises(ValueError):
         TopmodelConfig("1\ntitle\n", PARAMS)
     with pytest.raises(ValueError, match="12"):
         TopmodelConfig(TOPMOD_RUN, "title\n0.032 5.0\n")
+    short = tmp_path / "short.run"
+    short.write_text("1\ntitle\n")
+    with pytest.raises(ValueError, match="at least 7 lines"):
+        TopmodelConfig.read(short)
+
+
+def test_topmodel_workdir_defaults_to_run_directory(topmodel_dir, monkeypatch):
+    monkeypatch.chdir("/")
+    cfg = TopmodelConfig.read(topmodel_dir / "topmod.run")
+    assert cfg.get("szm") == "0.032" and cfg.workdir == topmodel_dir.resolve()
+    assert open_config("TopmodelConfig", topmodel_dir / "topmod.run").get("szm") == "0.032"
 
 
 def test_topmodel_write_in_place(topmodel_dir):
