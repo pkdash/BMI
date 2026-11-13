@@ -9,6 +9,10 @@ PKG_DIR="${ROOT_DIR}/pymt_sac_sma"
   exit 1
 }
 
+# Install the generated BMI wrapper (.pyx + NumPy helpers) rendered by
+# ../common/render_wrappers.py and vendored in ./wrapper; see ../common/README.md.
+bash "${ROOT_DIR}/wrapper/install.sh" "${PKG_DIR}"
+
 INTEROP_F90="${PKG_DIR}/pymt_sac_sma/lib/bmi_interoperability.f90"
 
 if [[ ! -f "${INTEROP_F90}" ]]; then
@@ -282,37 +286,9 @@ path.write_text(text)
 PYEOF
 fi
 
-# Sac-SMA's bmi_sac.f90 reports variable types with C-style names (e.g.
-# get_var_type returns "double"), but Babelizer's generated DTYPE_F_TO_PY only
-# maps Fortran declarations (real, real*8, double precision, integer), so
-# get_var_type raises KeyError: 'double'. Add the C-style aliases.
-PYX="${PKG_DIR}/pymt_sac_sma/lib/sac_sma.pyx"
-if [[ -f "${PYX}" ]]; then
-python - "${PYX}" <<'PYEOF'
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-text = path.read_text()
-anchor = "    'integer': DTYPE_INT,\n}"
-if "'double': DTYPE_DOUBLE" not in text:
-    if anchor not in text:
-        sys.exit(f"ERROR: DTYPE_F_TO_PY anchor not found in {path}")
-    text = text.replace(
-        anchor,
-        "    'integer': DTYPE_INT,\n"
-        "    # Sac-SMA's bmi_sac.f90 reports C-style names (get_var_type returns\n"
-        "    # \"double\"), not Fortran declarations, so accept those spellings too.\n"
-        "    'double': DTYPE_DOUBLE,\n"
-        "    'float': DTYPE_FLOAT,\n"
-        "    'int': DTYPE_INT,\n"
-        "}",
-        1,
-    )
-    path.write_text(text)
-PYEOF
-echo "- Added C-style type aliases to DTYPE_F_TO_PY in sac_sma.pyx"
-fi
+# Sac-SMA's bmi_sac.f90 reports C-style type names (get_var_type returns
+# "double"); the generated wrapper's shared dtype resolution
+# (_bmi_arrays.resolve_dtype) accepts those, so no .pyx patch is needed.
 
 echo
 echo "Patched:"

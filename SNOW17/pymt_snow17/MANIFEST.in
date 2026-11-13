@@ -15,3 +15,4 @@ recursive-exclude pymt_snow17 *.cpp
 recursive-exclude pymt_snow17 *.c
 recursive-include pymt_snow17 *.f90
 recursive-include pymt_snow17 *.h
+recursive-include pymt_snow17 *.pxi

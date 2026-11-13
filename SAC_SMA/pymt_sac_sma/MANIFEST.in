@@ -18,3 +18,4 @@ recursive-include pymt_sac_sma *.c
 recursive-include pymt_sac_sma *.f90
 recursive-include pymt_sac_sma *.h
 recursive-include pymt_sac_sma *.yaml
+recursive-include pymt_sac_sma *.pxi

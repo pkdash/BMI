@@ -7,6 +7,10 @@ PKG_DIR="${ROOT_DIR}/pymt_snow17"
 
 echo "Reapplying Snow17 patches in: ${PKG_DIR}"
 
+# Install the generated BMI wrapper (.pyx + NumPy helpers) rendered by
+# ../common/render_wrappers.py and vendored in ./wrapper; see ../common/README.md.
+bash "${ROOT_DIR}/wrapper/install.sh" "${PKG_DIR}"
+
 INTEROP_F90="${PKG_DIR}/pymt_snow17/lib/bmi_interoperability.f90"
 if [[ -f "${INTEROP_F90}" ]]; then
   sed -i \

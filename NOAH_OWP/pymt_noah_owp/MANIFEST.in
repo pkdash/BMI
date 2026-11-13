@@ -15,3 +15,4 @@ recursive-exclude pymt_noah_owp *.cpp
 recursive-exclude pymt_noah_owp *.c
 recursive-include pymt_noah_owp *.f90
 recursive-include pymt_noah_owp *.h
+recursive-include pymt_noah_owp *.pxi
