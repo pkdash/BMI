@@ -1,0 +1,74 @@
+{
+  "model": "pet",
+  "codec": "KeyValueConfig",
+  "library": "NOAA-OWP/evapotranspiration src/bmi_pet.c",
+  "note": "PET exposes no parameters through BMI; every entry is changed in the config file.",
+  "parameters": {
+    "wind_speed_measurement_height_m": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "wind_speed_measurement_height_m",
+      "set_value": "none"
+    },
+    "humidity_measurement_height_m": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "humidity_measurement_height_m",
+      "set_value": "none"
+    },
+    "vegetation_height_m": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "vegetation_height_m",
+      "set_value": "none"
+    },
+    "zero_plane_displacement_height_m": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "zero_plane_displacement_height_m",
+      "set_value": "none"
+    },
+    "momentum_transfer_roughness_length": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "momentum_transfer_roughness_length",
+      "set_value": "none"
+    },
+    "heat_transfer_roughness_length_m": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "heat_transfer_roughness_length_m",
+      "set_value": "none"
+    },
+    "surface_longwave_emissivity": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "surface_longwave_emissivity",
+      "set_value": "none"
+    },
+    "surface_shortwave_albedo": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "surface_shortwave_albedo",
+      "set_value": "none"
+    },
+    "latitude_degrees": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "latitude_degrees",
+      "set_value": "none"
+    },
+    "longitude_degrees": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "longitude_degrees",
+      "set_value": "none"
+    },
+    "site_elevation_m": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "site_elevation_m",
+      "set_value": "none"
+    }
+  }
+}

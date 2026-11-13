@@ -1,0 +1,173 @@
+{
+  "model": "cfe",
+  "codec": "KeyValueConfig",
+  "library": "NOAA-OWP/cfe src/bmi_cfe.c (param_var_names)",
+  "parameters": {
+    "a_Xinanjiang_inflection_point_parameter": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "a_Xinanjiang_inflection_point_parameter",
+      "set_value": "equivalent",
+      "note": "read from the config only when surface_partitioning_scheme=Xinanjiang"
+    },
+    "alpha_fc": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "alpha_fc",
+      "set_value": "equivalent"
+    },
+    "b": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "soil_params.b",
+      "set_value": "equivalent"
+    },
+    "b_Xinanjiang_shape_parameter": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "b_Xinanjiang_shape_parameter",
+      "set_value": "unexercised",
+      "note": "read from the config only when surface_partitioning_scheme=Xinanjiang"
+    },
+    "Cgw": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m h-1",
+      "config_key": "Cgw",
+      "set_value": "equivalent"
+    },
+    "expon": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "expon",
+      "set_value": "equivalent"
+    },
+    "Kinf_nash_surface": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "h-1",
+      "config_key": "Kinf_nash_surface",
+      "set_value": "equivalent",
+      "note": "used only when surface_runoff_scheme=NASH_CASCADE"
+    },
+    "Klf": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "K_lf",
+      "set_value": "unexercised"
+    },
+    "Kn": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "K_nash",
+      "set_value": "unexercised",
+      "note": "config key K_nash is the older name of K_nash_subsurface"
+    },
+    "max_gw_storage": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m",
+      "config_key": "max_gw_storage",
+      "set_value": "differs",
+      "note": "CFE Set_value does not rescale the current groundwater storage when this changes (it tests for the name 'storage_max_m', bmi_cfe.c Set_value), so results differ from a config edit; change it in the config"
+    },
+    "maxsmc": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m/m",
+      "config_key": "soil_params.smcmax",
+      "set_value": "equivalent"
+    },
+    "refkdt": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "refkdt",
+      "set_value": "equivalent"
+    },
+    "retention_depth_nash_surface": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m",
+      "config_key": "retention_depth_nash_surface",
+      "set_value": "equivalent",
+      "note": "used only when surface_runoff_scheme=NASH_CASCADE"
+    },
+    "satdk": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m s-1",
+      "config_key": "soil_params.satdk",
+      "set_value": "equivalent"
+    },
+    "satpsi": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m",
+      "config_key": "soil_params.satpsi",
+      "set_value": "equivalent"
+    },
+    "slope": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m/m",
+      "config_key": "soil_params.slop",
+      "set_value": "unexercised"
+    },
+    "wltsmc": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m/m",
+      "config_key": "soil_params.wltsmc",
+      "set_value": "equivalent"
+    },
+    "x_Xinanjiang_shape_parameter": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "x_Xinanjiang_shape_parameter",
+      "set_value": "equivalent",
+      "note": "read from the config only when surface_partitioning_scheme=Xinanjiang"
+    },
+    "soil_params.depth": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m",
+      "config_key": "soil_params.depth",
+      "set_value": "none"
+    },
+    "soil_params.expon": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "soil_params.expon",
+      "set_value": "none",
+      "note": "soil-reservoir exponent; not the same as BMI 'expon' (groundwater)"
+    },
+    "soil_params.expon_secondary": {
+      "dtype": "float64",
+      "length": 1,
+      "config_key": "soil_params.expon_secondary",
+      "set_value": "none"
+    },
+    "gw_storage": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m/m",
+      "config_key": "gw_storage",
+      "set_value": "none",
+      "note": "initial groundwater storage, fraction of max_gw_storage"
+    },
+    "soil_storage": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "m/m",
+      "config_key": "soil_storage",
+      "set_value": "none",
+      "note": "initial soil storage, fraction of capacity"
+    },
+    "giuh_ordinates": {
+      "dtype": "float64",
+      "length": null,
+      "config_key": "giuh_ordinates",
+      "set_value": "none"
+    }
+  }
+}

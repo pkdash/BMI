@@ -1,0 +1,127 @@
+{
+  "model": "noah",
+  "codec": "NamelistConfig",
+  "library": "NOAA-OWP/noah-owp-modular bmi/bmi_noahowp.f90",
+  "note": "BMI parameters are read at initialize from the parameter tables (SOILPARM.TBL, GENPARM.TBL, MPTABLE.TBL), not the namelist; editing the tables is out of scope, so they are changed through BMI only. 'source' gives the table column (row selected by isltyp) where it has been verified.",
+  "parameters": {
+    "AXAJ": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "BEXP": {
+      "dtype": "float32",
+      "length": "nsoil",
+      "units": "unitless",
+      "source": "SOILPARM.TBL:BB",
+      "set_value": "equivalent"
+    },
+    "BXAJ": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "CWP": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "1/m",
+      "set_value": "untested"
+    },
+    "DKSAT": {
+      "dtype": "float32",
+      "length": "nsoil",
+      "units": "m/s",
+      "source": "SOILPARM.TBL:SATDK",
+      "set_value": "unexercised"
+    },
+    "FRZX": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "HVT": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "m",
+      "set_value": "untested"
+    },
+    "KDT": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "MFSNO": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "MP": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "REFKDT": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "source": "GENPARM.TBL:REFKDT_DATA",
+      "set_value": "unexercised"
+    },
+    "RSURF_EXP": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "RSURF_SNOW": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "s/m",
+      "set_value": "untested"
+    },
+    "SCAMAX": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "SLOPE": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "SMCMAX": {
+      "dtype": "float32",
+      "length": "nsoil",
+      "units": "volumetric",
+      "source": "SOILPARM.TBL:MAXSMC",
+      "set_value": "equivalent"
+    },
+    "VCMX25": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "umol co2/m**2/s",
+      "set_value": "untested"
+    },
+    "XXAJ": {
+      "dtype": "float32",
+      "length": 1,
+      "units": "unitless",
+      "set_value": "untested"
+    },
+    "forcing.rain_snow_thresh": {
+      "dtype": "float64",
+      "length": 1,
+      "units": "degC",
+      "config_key": "forcing.rain_snow_thresh",
+      "set_value": "none"
+    }
+  }
+}

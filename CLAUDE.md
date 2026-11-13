@@ -66,6 +66,15 @@ To test end to end after changing anything that affects the wrappers (`common/`,
 .claude/skills/test-bmi-wrappers/scripts/run_quickstart_tests.sh --out <dir> [--no-contract] [--no-cache] [MODEL ...]
 ```
 
+## `bmi_setup/` (Python package over the wrappers)
+
+`bmi_setup/` is the BMI-generic setup layer, numpy only. It is not generated, so edit it directly.
+
+- **What it contains:** `open_model`/`Model` (safe lifecycle, scalar broadcast), per-model parameter catalogs in `bmi_setup/catalogs/*.json`, and config codecs (`KeyValueConfig`, `NamelistConfig`, `TopmodelConfig`).
+- **Catalog changes:** draft with `bmi_setup/tools/probe_parameters.py`, then classify with `bmi_setup/tools/check_equivalence.py`. Don't hand-edit `set_value` statuses without rerunning the comparison.
+- **Unit tests:** `python -m pytest bmi_setup/tests --ignore=bmi_setup/tests/integration`.
+- **Integration tests:** `python -m pytest bmi_setup/tests/integration -m wrappers`. They need the wrappers plus the `PYMT_<KEY>_CONFIG` and `BMI_SETUP_FORCING_CSV` env vars; see `bmi_setup/README.md`.
+
 ## Known native quirks (documented, not fixed in the wrappers)
 
 `common/README.md` covers these in detail. The main ones: CFE `get_value` copies only element 0 (use `get_value_ptr` for all layers), and CFE `get_value_at_indices` accepts only index 0. Noah-OWP's `get_value_ptr` always fails, and Fortran wrappers emulate `*_at_indices` through full `get_value`/`set_value` calls. Sac-SMA reports C-style type names. SMP `SetValue` and LASAM reallocate arrays, which invalidates earlier pointer views, so the wrappers query dtype and size from `get_var_type`/`get_var_itemsize`/`get_var_nbytes` on every call, never from grid size.
